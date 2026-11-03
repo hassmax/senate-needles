@@ -44,7 +44,7 @@ export async function kalshi(race, cache) {
         let side = sideOf(race, { name: label, party: (m.yes_sub_title || m.ticker.split("-").pop() || "") });
         if (side === "other") side = sideOf(race, { party: m.ticker.split("-").pop() });
         const p = kalshiPrice(m);
-        if (side !== "other" && p != null) out[side] = p;
+        if (side !== "other" && p != null && (out[side] == null || p > out[side])) out[side] = p;
       }
       if (out.left == null && out.right == null) continue;
       cache.kalshi = t;
@@ -72,7 +72,9 @@ export async function kalshiControl() {
 function polyPrice(m) {
   let prices = m.outcomePrices;
   try { if (typeof prices === "string") prices = JSON.parse(prices); } catch { prices = null; }
-  return mid(m.bestBid, m.bestAsk, m.lastTradePrice) ?? (prices ? Number(prices[0]) : null);
+  // outcomePrices is the price Polymarket shows (its midpoint, or last trade when the spread is wide).
+  const shown = prices ? Number(prices[0]) : NaN;
+  return Number.isFinite(shown) && shown > 0 ? shown : mid(m.bestBid, m.bestAsk, m.lastTradePrice);
 }
 
 function polyEventMatches(race, ev) {
@@ -111,7 +113,9 @@ export async function polymarket(race, cache) {
       ? sideOf(race, { name: label, party: (m.groupItemTitle || "").trim() })
       : /democrat/i.test(label) ? sideOf(race, { party: "D" }) : /republican/i.test(label) ? sideOf(race, { party: "R" }) : "other";
     const p = polyPrice(m);
-    if (side !== "other" && p != null) out[side] = p;
+    // Several markets can match one side (placeholders, a same-named minor candidate): keep the
+    // main one, which trades highest.
+    if (side !== "other" && p != null && p > 0.002 && (out[side] == null || p > out[side])) out[side] = p;
   }
   if (out.left == null && out.right == null) throw new Error(`Polymarket event ${ev.slug} has no matching candidates`);
   cache.polymarket = ev.slug;

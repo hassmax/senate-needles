@@ -8,6 +8,8 @@ const FEED = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed";
 const SEARCH = "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts";
 const PROFILES = "https://api.bsky.app/xrpc/app.bsky.actor.getProfiles";
 
+// Search finds a lot of campaign messaging; keep posts that talk about the count or the result.
+const RESULT_WORDS = /\b(results?|counted|count|reporting|precincts?|turnout|leads?|leading|ahead|trails?|call(s|ed)?|projects?|projected|wins?|won|concedes?|conceded|votes? in|margin|exit polls?|polls? clos|early vote|mail ballots?|absentee|county|counties|returns|race call|decision desk|AP)\b/i;
 const ELECTION_WORDS = /\b(senate|senator|race call|projects?|projected|wins?|won|concedes?|conceded|votes? counted|turnout|precincts?|polls close|exit poll|ballots?|election)\b/i;
 
 export const excerpt = (s, n = 240) => {
@@ -104,11 +106,15 @@ export async function bluesky(cfg, races, health, cache) {
   }));
   cache.followers = cache.followers || {};
   await followerCounts(found.map((f) => f.p.author.handle).filter((h) => !listed.has(h)), cache.followers);
-  const min = cfg.min_followers || 3000;
+  const min = cfg.min_followers || 10000;
+  const seenText = new Set();
   for (const { p, race: hint } of found) {
     if (listed.has(p.author.handle)) continue;
     if ((cache.followers[p.author.handle] || 0) < min) continue;
     const text = (p.record && p.record.text) || "";
+    const key = text.toLowerCase().replace(/[^a-z]/g, "").slice(0, 80);
+    if (seenText.has(key) || !RESULT_WORDS.test(text) || text.replace(/https?:\/\/\S+|\S+\.\S+\/\S*/g, "").trim().length < 40) continue;
+    seenText.add(key);
     const time = p.record && p.record.createdAt || p.indexedAt;
     if (Date.parse(time) < since) continue;
     const race = raceOf(races, text);

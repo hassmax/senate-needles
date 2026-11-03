@@ -44,6 +44,15 @@ jobs:
           fi
           ls -la state
 
+      - name: Alaska's missing intermediate certificate
+        # elections.alaska.gov sends the wrong intermediate; this adds the right one (GlobalSign's
+        # published file), so the connection is still fully checked.
+        continue-on-error: true
+        run: |
+          curl -sSf -m 15 -o /tmp/ak.crt http://secure.globalsign.com/cacert/gsgccr46ovtlsca2025.crt
+          openssl x509 -inform der -in /tmp/ak.crt -out /tmp/ak.pem
+          echo "NODE_EXTRA_CA_CERTS=/tmp/ak.pem" >> "$GITHUB_ENV"
+
       - name: Read sources
         env:
           BUILD_SHA: ${{ github.sha }}

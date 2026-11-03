@@ -344,12 +344,14 @@ function feedItems() {
   const items = (S.live && S.live.feed) || [];
   if (S.filter === "all") return items;
   if (S.filter === "calls") return items.filter((i) => i.call);
+  if (S.filter === "newsrooms") return items.filter((i) => i.kind === "post" && i.via === "account");
+  if (S.filter === "headlines") return items.filter((i) => i.kind === "news");
   return items.filter((i) => i.race === S.filter);
 }
 function renderFilter() {
   const box = document.getElementById("feed-filter");
   box.replaceChildren();
-  const opts = [["all", "All"], ["calls", "Calls"], ...S.config.races.map((r) => [r.id, r.id])];
+  const opts = [["all", "All"], ["calls", "Calls"], ["newsrooms", "Newsrooms"], ["headlines", "Headlines"], ...S.config.races.map((r) => [r.id, r.id])];
   for (const [id, label] of opts) {
     const b = el("button", { type: "button", "aria-pressed": String(S.filter === id), text: label });
     b.addEventListener("click", () => { S.filter = id; renderFilter(); renderFeed(); });

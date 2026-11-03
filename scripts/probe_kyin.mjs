@@ -1,23 +1,21 @@
-// One-off look at Indiana's results data files (which one holds the House districts).
+// One-off look at Indiana's office list and the U.S. House office file.
 import { UA } from "./lib.mjs";
 const short = (s, n) => s.replace(/\s+/g, " ").slice(0, n);
-const get = async (u) => { const r = await fetch(u, { headers: { "User-Agent": UA } }); return [r.status, r.headers.get("content-type"), await r.text()]; };
-const base = "https://enr.indianavoters.in.gov/site/";
-const [, , html] = await get(base + "index.html");
-const main = [...html.matchAll(/src="(Scripts\/EnrAngular[^"]*enrMainController[^"]*)"/g)].map((m) => m[1])[0];
-const [, , js] = await get(base + main);
-for (const k of ["officeJsonFiles", "jurisdictionJsonFiles", "statewideElectionsR", "fetchMultipleJson", "fileName"]) {
-  let i = js.indexOf(k), n = 0;
-  while (i >= 0 && n < 3) { console.log(`near ${k}:`, short(js.slice(Math.max(0, i - 300), i + 700), 1000)); i = js.indexOf(k, i + 1); n++; }
-}
-const [, , v] = await get(base + "data/version.json");
-const ver = JSON.parse(v).Root.Version.VERSION_CODE;
-for (const f of ["settings", "statewideElectionsR", "statewideElectionsC"]) {
-  for (const name of [`${f}_${ver}`, f]) {
-    for (const dir of ["data/", "clientData/"]) {
-      const [st, ct, t] = await get(base + dir + name + ".json");
-      if (st === 200) { console.log(`\nIN ${dir}${name}.json ${t.length} bytes:`, short(t, 2500)); }
-    }
-  }
+const getJ = async (u) => { const r = await fetch(u, { headers: { "User-Agent": UA } }); const t = await r.text(); return [r.status, t]; };
+const base = "https://enr.indianavoters.in.gov/site/data/";
+const [, st] = await getJ(base + "settings.json");
+const vt = JSON.parse(st).Root.VersionType;
+const [s1, list] = await getJ(base + `statewideElectionsC_${vt}.json`);
+console.log("office list", s1, list.length, short(list, 3000));
+let ids = [];
+try {
+  const j = JSON.parse(list); const root = j.Root || j;
+  const L = [].concat(root.List || []);
+  for (const o of L) for (const it of [].concat((o.Items && o.Items.Item) || [])) ids.push([it.OFFICECATEGORYID, JSON.stringify(it).slice(0, 200)]);
+} catch (e) { console.log("parse", e.message); }
+console.log("categories:", ids.map((x) => x[1]).join("\n "));
+for (const [id] of ids.filter((x) => /Representative|Congress|U\.?S\.? House|United States/i.test(x[1])).slice(0, 2)) {
+  const [s2, t] = await getJ(base + `OffCatC_${id}_${vt}.json`);
+  console.log(`\nOffCatC_${id}_${vt}.json`, s2, t.length, short(t, 4000));
 }
 process.exit(0);

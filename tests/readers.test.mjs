@@ -75,3 +75,13 @@ test("race calls only from clear call language after polls close", () => {
   assert.equal(detectCall(races, { text: "Brown leads in early returns as Husted trails in Ohio Senate race", time: after }, Date.parse(after)), null);
   assert.equal(raceOf(races, "Kansas Senate: Marshall vs Hamilton").id, "KS");
 });
+
+test("stated win chances in an analyst's posts", async () => {
+  const { statedChance } = await import("../scripts/sources/social.mjs");
+  assert.deepEqual(statedChance(races, "Our model now gives Sherrod Brown an 82% chance in Ohio."), [{ race: "OH", p_left: 0.82 }]);
+  const tx = statedChance(races, "Paxton is now a 3 in 4 favorite in the Texas Senate race, per my model.");
+  assert.equal(tx[0].race, "TX"); assert.ok(Math.abs(tx[0].p_left - 0.25) < 1e-9);
+  assert.deepEqual(statedChance(races, "Brown leads Husted 52-47 in Ohio with 40% reporting."), []);
+  assert.deepEqual(statedChance(races, "Talarico is winning 58% of the vote in Harris County, Texas Senate."), []);
+  assert.deepEqual(statedChance(races, "Turnout in Kansas is up 12% from 2022."), []);
+});

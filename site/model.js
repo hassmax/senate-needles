@@ -48,21 +48,30 @@ export function probit(p) {
   return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
 }
 
-// The starting point before votes are counted: G. Elliott Morris's final forecast where the race
-// has one (race.forecast: p_left, and margin if he publishes it), else the polling average.
-// With both a margin and a probability, the spread is set so the start matches his probability
-// exactly; with only a probability, his margin is inferred using the default spread.
-export function priorOf(race) {
+// The starting point before votes are counted: the final polling average (prior.margin, with
+// prior.sd points of error), blended with G. Elliott Morris's final forecast where the race has
+// one (race.forecast.p_left) — `weight` of his forecast, the rest the polls, averaged on the
+// normal-score scale so the result is again a margin and a spread.
+export function priorOf(race, weight = 0.7) {
+  const sd = (race.prior && race.prior.sd) || 5.5;
+  const zPolls = race.prior.margin / sd;
   const f = race.forecast;
-  const sdDefault = (race.prior && race.prior.sd) || 5.5;
-  if (f && f.p_left != null) {
-    const z = probit(f.p_left);
-    if (f.margin != null && Math.abs(z) > 0.05 && Math.sign(z) === Math.sign(f.margin)) {
-      return { margin: f.margin, sd: clamp(Math.abs(f.margin / z), 2, 12), source: f.source, from: "forecast" };
-    }
-    return { margin: sdDefault * z, sd: sdDefault, source: f.source, from: "forecast" };
-  }
-  return { margin: race.prior.margin, sd: sdDefault, source: race.prior.source, from: "polls" };
+  if (!f || f.p_left == null) return { margin: race.prior.margin, sd, from: "polls" };
+  const z = weight * probit(f.p_left) + (1 - weight) * zPolls;
+  return { margin: z * sd, sd, from: "blend" };
+}
+
+// A win probability G. Elliott Morris posts during the night for a race (live = {p_left, time})
+// is blended into the needle: half weight when posted, halving every hour after, and less as the
+// count itself comes in (`reported`, the share of the expected vote counted).
+export function blendLive(p, live, now, reported = 0) {
+  if (!live || live.p_left == null) return { p, w: 0 };
+  const ageMin = (now - Date.parse(live.time)) / 60000;
+  if (!(ageMin >= -5) || ageMin > 240) return { p, w: 0 };
+  const w = 0.5 * Math.pow(0.5, Math.max(0, ageMin) / 60) * (1 - clamp(reported, 0, 1));
+  const lg = (x) => Math.log(clamp(x, 1e-4, 1 - 1e-4) / (1 - clamp(x, 1e-4, 1 - 1e-4)));
+  const z = (1 - w) * lg(p) + w * lg(live.p_left);
+  return { p: 1 / (1 + Math.exp(-z)), w };
 }
 
 // baseline: {d, r, total, units: [{fips, name, d, r, total}]}

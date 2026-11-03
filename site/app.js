@@ -1,4 +1,4 @@
-import { estimate, marketShare, lean, phi, priorOf } from "./model.js?v=__BUILD__";
+import { estimate, marketShare, lean, phi, priorOf, blendLive } from "./model.js?v=__BUILD__";
 
 const REFRESH_MS = 20000;
 const BUILD = document.querySelector('meta[name="build"]').content;
@@ -11,10 +11,7 @@ const NUM = new Intl.NumberFormat("en-US");
 const S = {
   config: null, baselines: {}, live: null, history: {}, filter: "top", seenFeed: null,
   jitter: true, cards: {}, est: {}, lastOk: 0, lastGenerated: null,
-  stars: {}, seenStars: null,
 };
-const BSKY_FEED = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed";
-const STAR_MS = 30000;
 
 function fatal(msg) {
   const el = document.getElementById("fatal");
@@ -124,16 +121,19 @@ function raceView(race) {
   const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
   const counts = lr.counts && lr.counts.ok ? lr.counts : null;
   const base = S.baselines[race.id];
-  const prior = priorOf(race);
+  const prior = priorOf(race, S.config.forecast_weight);
   let est = estimate(base, counts, { prior, turnout: race.turnout || S.config.turnout_default, late_share: race.late_share, rcv: race.rcv });
   // No official count to model (Maine, a blocked site, or a feed that failed): once polls close,
   // the needle shows market odds, which move with the count; before that, the forecast (if any).
   const noCount = !!race.no_live_count || (closed && !counts);
   if (noCount && closed && mAvg != null) {
     est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
-  } else if (race.no_live_count && mAvg != null && est.mode === "prior" && prior.from !== "forecast") {
-    est = { ...est, mode: "market", p: mAvg, note: "Market odds: no official live count" };
   }
+  // A win probability G. Elliott Morris has posted for this race tonight is blended in, fading
+  // over the following hours and as the count comes in.
+  const live = S.live && S.live.analyst && S.live.analyst[race.id];
+  const b = blendLive(est.p, live, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
+  if (b.w > 0) est = { ...est, p: b.p, analyst: { ...live, w: b.w } };
   return { lr, closed, kal, poly, mAvg, est, counts, prior };
 }
 
@@ -152,7 +152,6 @@ function buildCard(race) {
     meta: el("div", { class: "meta" }),
     tally: el("div", { class: "tally" }),
     call: el("div", { class: "callbox" }),
-    morris: el("div", { class: "morris" }),
     markets: el("div", { class: "markets" }),
     spark: svgEl("svg", { class: "spark", viewBox: "0 0 300 34", preserveAspectRatio: "none", "aria-hidden": "true" }),
     note: el("div", { class: "note" }),
@@ -160,7 +159,7 @@ function buildCard(race) {
     p: 0.5, band: [0.5, 0.5],
   };
   card.head.append(el("h3", { text: race.title }), card.status);
-  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.morris, card.markets, card.spark, card.note, card.sources);
+  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.spark, card.note, card.sources);
   return card;
 }
 
@@ -192,10 +191,9 @@ function updateCard(race, card) {
     card.band = [phi((est.margin - 0.25 * est.sd) / est.sd), phi((est.margin + 0.25 * est.sd) / est.sd)];
   } else card.band = [est.p, est.p];
   if (!jitterOn()) setArm(card, est.p);
-  const f = race.forecast;
+  const start = priorOf(race, S.config.forecast_weight);
   const marks = [
-    f ? { p: f.p_left, label: "M", hollow: true, title: `${f.source}: ${race.left.last} ${pct(f.p_left)}%` }
-      : { p: phi(race.prior.margin / race.prior.sd), label: "", hollow: true, title: `Pre-election polling average: ${marginText(race, race.prior.margin / 100)}` },
+    { p: phi(start.margin / start.sd), label: "", hollow: true, title: "Starting point before the count" },
     { p: marketShare(v.kal), label: "K", title: "Kalshi market price" },
     { p: marketShare(v.poly), label: "P", title: "Polymarket market price" },
   ];
@@ -213,14 +211,10 @@ function updateCard(race, card) {
   if (est.mode === "model" || est.mode === "statewide") {
     card.est.textContent = `Est. final margin: ${marginText(race, est.margin)} · 80% range ${marginText(race, est.lo)} to ${marginText(race, est.hi)}`;
   } else if (est.mode === "market") {
-    card.est.textContent = f ? `${est.note}. Morris's forecast was ${f.p_left >= 0.5 ? race.left.last : race.right.last} ${pct(Math.max(f.p_left, 1 - f.p_left))}%.`
-      : `${est.note}. Polling average was ${marginText(race, race.prior.margin / 100)}.`;
-  } else if (f) {
-    card.est.textContent = `G. Elliott Morris's forecast${f.margin != null ? `: ${marginText(race, f.margin / 100)}` : ""}`;
-    card.est.title = `${f.source}${f.as_of ? `, as of ${f.as_of}` : ""}`;
+    card.est.textContent = `${est.note}.`;
   } else {
-    card.est.textContent = `Polling average: ${marginText(race, race.prior.margin / 100)}`;
-    card.est.title = `${race.prior.source}, as of ${race.prior.as_of}`;
+    card.est.textContent = `Before the count · polling average ${marginText(race, race.prior.margin / 100)}`;
+    card.est.title = "Starting point: the final polling average blended with G. Elliott Morris's final forecast";
   }
 
   // Counted share bar
@@ -250,9 +244,6 @@ function updateCard(race, card) {
     const txt = `${call.by || "Reported"} call: ${call.winner === "left" ? race.left.name : race.right.name} wins${call.time ? ` (${fmtTime(call.time)})` : ""}`;
     card.call.append(call.url ? el("a", { href: call.url, target: "_blank", rel: "noopener", text: txt + " ↗" }) : txt);
   }
-
-  // The featured analyst's latest post on this race (last 18 hours)
-  renderCardStar(race, card);
 
   // Markets
   card.markets.replaceChildren();
@@ -301,91 +292,6 @@ function drawSpark(svg, pts, race) {
   }));
   const title = svgEl("title", {}); title.textContent = `${race.left.last}'s chance over the night (top = ${race.left.last}, bottom = ${race.right.last})`;
   svg.append(title);
-}
-
-// ---------- featured analyst (G. Elliott Morris) ----------
-function raceOfText(text) {
-  const t = String(text || "");
-  const hits = S.config.races.filter((r) =>
-    (new RegExp(`\\b${r.state}\\b`, "i").test(t) && /senat/i.test(t)) || t.includes(r.left.name) || t.includes(r.right.name) ||
-    (new RegExp(`\\b${r.left.last}\\b`).test(t) && new RegExp(`\\b${r.right.last}\\b`).test(t)) ||
-    new RegExp(`\\b(${r.left.last}|${r.right.last})\\b`).test(t) && new RegExp(`\\b${r.state}\\b`, "i").test(t));
-  return hits.length === 1 ? hits[0].id : null;
-}
-function mergeStars(list) {
-  for (const a of list || []) {
-    const cur = S.stars[a.handle] || { ...a, posts: [] };
-    const byId = new Map(cur.posts.map((p) => [p.id, p]));
-    for (const p of a.posts || []) byId.set(p.id, p);
-    cur.name = a.name || cur.name; cur.about = a.about || cur.about;
-    cur.posts = [...byId.values()].sort((x, y) => Date.parse(y.time) - Date.parse(x.time)).slice(0, 40);
-    S.stars[a.handle] = cur;
-  }
-}
-async function refreshStars() {
-  const accts = Object.values(S.stars);
-  await Promise.all(accts.map(async (a) => {
-    try {
-      const res = await fetch(`${BSKY_FEED}?actor=${encodeURIComponent(a.handle)}&limit=30&filter=posts_and_author_threads`);
-      if (!res.ok) return;
-      const j = await res.json();
-      const posts = [];
-      for (const f of j.feed || []) {
-        if (f.reason) continue;
-        const p = f.post, text = (p.record && p.record.text) || "";
-        const time = (p.record && p.record.createdAt) || p.indexedAt;
-        if (Date.now() - Date.parse(time) > 36 * 3600e3) continue;
-        const qv = p.embed && p.embed.record && (p.embed.record.value || (p.embed.record.record && p.embed.record.record.value));
-        const imgs = p.embed && (p.embed.images || (p.embed.media && p.embed.media.images));
-        posts.push({ id: p.uri, time, text: text.length > 300 ? text.slice(0, 299) + "…" : text,
-          url: `https://bsky.app/profile/${p.author.handle}/post/${p.uri.split("/").pop()}`, race: raceOfText(text),
-          images: imgs ? imgs.length : 0, quote: qv && qv.text ? qv.text.slice(0, 140) : null });
-      }
-      mergeStars([{ handle: a.handle, posts }]);
-    } catch { /* the collector's copy is still shown */ }
-  }));
-  renderStars();
-  for (const race of S.config.races) renderCardStar(race, S.cards[race.id]);
-}
-function renderStars() {
-  const box = document.getElementById("featured");
-  const accts = Object.values(S.stars);
-  if (!accts.length) { box.hidden = true; return; }
-  box.hidden = false;
-  box.replaceChildren();
-  const first = S.seenStars == null;
-  S.seenStars = S.seenStars || new Set();
-  for (const a of accts) {
-    box.append(el("div", { class: "featured-head" },
-      el("h2", { text: a.name }),
-      el("p", {}, el("a", { href: `https://bsky.app/profile/${a.handle}`, target: "_blank", rel: "noopener", text: "@" + a.handle }), a.about ? ` · ${a.about}` : "")));
-    const ol = el("ol");
-    if (!a.posts.length) ol.append(el("li", { text: "No posts in the last day and a half." }));
-    for (const p of a.posts.slice(0, 15)) {
-      const li = el("li", { class: !first && !S.seenStars.has(p.id) ? "new" : "" });
-      li.append(el("div", { class: "when" }, el("span", { text: fmtTime(p.time) + " ET" }), p.race ? el("span", { class: "tag", text: p.race }) : null,
-        p.images ? el("span", { class: "tag", text: p.images === 1 ? "image" : `${p.images} images` }) : null));
-      const a2 = el("a", { href: p.url, target: "_blank", rel: "noopener" }, el("p", { class: "txt", text: p.text }));
-      if (p.quote) a2.append(el("p", { class: "quote", text: p.quote }));
-      li.append(a2);
-      ol.append(li);
-      S.seenStars.add(p.id);
-    }
-    box.append(ol);
-  }
-}
-function renderCardStar(race, card) {
-  if (!card) return;
-  card.morris.replaceChildren();
-  let best = null, who = null;
-  for (const a of Object.values(S.stars)) {
-    const p = a.posts.find((x) => x.race === race.id && Date.now() - Date.parse(x.time) < 18 * 3600e3);
-    if (p && (!best || Date.parse(p.time) > Date.parse(best.time))) { best = p; who = a.name; }
-  }
-  card.morris.hidden = !best;
-  if (!best) return;
-  card.morris.append(el("a", { href: best.url, target: "_blank", rel: "noopener" },
-    el("b", { text: `${who}, ${fmtTime(best.time)}: ` }), el("span", { text: best.text.length > 180 ? best.text.slice(0, 179) + "…" : best.text })));
 }
 
 // ---------- jitter ----------
@@ -513,8 +419,6 @@ async function refresh() {
     if (live.generated !== S.lastGenerated) {
       S.live = live;
       S.lastGenerated = live.generated;
-      mergeStars(live.featured);
-      renderStars();
       try { S.history = await getJSON(DEMO ? "data/demo-history.json" : `data/history.json?t=${Date.now()}`); } catch { /* optional */ }
       renderAll();
     }
@@ -533,10 +437,6 @@ function renderAll() {
 
 async function boot() {
   S.config = await getJSON(`data/config.json?t=${Date.now()}`);
-  try {
-    const fc = await getJSON(`data/feed.json?t=${Date.now()}`);
-    mergeStars((fc.featured || []).map((a) => ({ ...a, posts: [] })));
-  } catch { /* the featured panel fills from live data instead */ }
   await Promise.all(S.config.races.map(async (r) => { S.baselines[r.id] = await getJSON(`data/baseline/${r.id}.json?v=${BUILD}`); }));
   const box = document.getElementById("races");
   for (const race of S.config.races) {
@@ -548,8 +448,6 @@ async function boot() {
   setupJitter();
   await refresh();
   setInterval(refresh, REFRESH_MS);
-  refreshStars();
-  setInterval(refreshStars, STAR_MS);
   setInterval(renderStatus, 5000);
   // Polls-close times pass without new data; re-render each minute so status chips change.
   setInterval(renderAll, 60000);

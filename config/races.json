@@ -1,5 +1,5 @@
 {
-  "_note": "Edit this file on GitHub to change a race: priors, candidates, feeds, or a hand call (set \"call\": {\"winner\": \"left\" or \"right\", \"by\": \"AP\", \"url\": \"...\"}). Margins are left candidate minus right candidate, in points. The next update picks up changes.",
+  "_note": "Edit this file on GitHub to change a race: priors, candidates, feeds, or a hand call (set \"call\": {\"winner\": \"left\" or \"right\", \"by\": \"AP\", \"url\": \"...\"}). Margins are left candidate minus right candidate, in points. The next update picks up changes. 'forecast' is G. Elliott Morris's final forecast (left candidate's chance), entered by hand; 'forecast_weight' is how much it counts against the polling average in each needle's starting point.",
   "election_date": "2026-11-03",
   "turnout_default": 0.75,
   "races": [
@@ -44,6 +44,11 @@
         "url": "https://liveresults.ohiosos.gov/Api/v1/download?filename=VSSC1622XmlFileBlob",
         "source": "Ohio Secretary of State",
         "min_interval": 90
+      },
+      "forecast": {
+        "p_left": 0.661,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -85,6 +90,11 @@
       "counts": {
         "reader": "florida",
         "min_interval": 150
+      },
+      "forecast": {
+        "p_left": 0.1446,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -118,10 +128,15 @@
         "South Carolina Senate",
         "Annie Andrews"
       ],
-      "no_live_count": "South Carolina's results site (run by Clarity) requires a browser check that automated readers can't pass, so this needle shows market odds.",
+      "no_live_count": "South Carolina's results site (run by Clarity) requires a browser check that automated readers can't pass, so once polls close this needle shows market odds.",
       "markets": {
         "polymarket": "south-carolina-senate-election-winner",
         "kalshi": "SENATESC-26"
+      },
+      "forecast": {
+        "p_left": 0.3834,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -154,10 +169,15 @@
         "Texas Senate",
         "Talarico Paxton"
       ],
-      "no_live_count": "Texas's official results site refuses requests from GitHub's servers, where this site collects its data, so this needle shows market odds.",
+      "no_live_count": "Texas's official results site refuses requests from GitHub's servers, where this site collects its data, so once polls close this needle shows market odds.",
       "markets": {
         "polymarket": "texas-senate-election-winner",
         "kalshi": "SENATETX-26"
+      },
+      "forecast": {
+        "p_left": 0.6516,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -190,10 +210,15 @@
         "Michigan Senate",
         "El-Sayed Rogers"
       ],
-      "no_live_count": "Michigan's official results site doesn't answer requests from GitHub's servers, where this site collects its data, so this needle shows market odds.",
+      "no_live_count": "Michigan's official results site doesn't answer requests from GitHub's servers, where this site collects its data, so once polls close this needle shows market odds.",
       "markets": {
         "polymarket": "michigan-senate-election-winner",
         "kalshi": "SENATEMI-26"
+      },
+      "forecast": {
+        "p_left": 0.7842,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -222,7 +247,7 @@
       "polls_close_all": "2026-11-04T01:00:00Z",
       "turnout": 0.82,
       "late_share": 0.02,
-      "no_live_count": "Maine's Secretary of State doesn't post a live count on election night (towns report to news organizations). This needle shows market odds instead.",
+      "no_live_count": "Maine's Secretary of State doesn't post a live count on election night (towns report to news organizations). Once polls close, this needle shows market odds instead.",
       "results_page": "https://www.maine.gov/sos/cec/elec/results/index.html",
       "news_query": "Maine Senate Collins Jackson",
       "bsky_queries": [
@@ -232,6 +257,11 @@
       "markets": {
         "polymarket": "maine-senate-election-winner",
         "kalshi": "SENATEME-26"
+      },
+      "forecast": {
+        "p_left": 0.7874,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -265,10 +295,15 @@
         "Kansas Senate",
         "Adam Hamilton Marshall"
       ],
-      "no_live_count": "Kansas's results site (run by Clarity) requires a browser check that automated readers can't pass, so this needle shows market odds.",
+      "no_live_count": "Kansas's results site (run by Clarity) requires a browser check that automated readers can't pass, so once polls close this needle shows market odds.",
       "markets": {
         "polymarket": "kansas-senate-election-winner",
         "kalshi": "SENATEKS-26"
+      },
+      "forecast": {
+        "p_left": 0.6478,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -301,10 +336,15 @@
         "Iowa Senate",
         "Hinson Turek"
       ],
-      "no_live_count": "Iowa's results site (run by Clarity) requires a browser check that automated readers can't pass, so this needle shows market odds.",
+      "no_live_count": "Iowa's results site (run by Clarity) requires a browser check that automated readers can't pass, so once polls close this needle shows market odds.",
       "markets": {
         "polymarket": "iowa-senate-election-winner",
         "kalshi": "SENATEIA-26"
+      },
+      "forecast": {
+        "p_left": 0.4964,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -346,6 +386,11 @@
       "markets": {
         "polymarket": "nebraska-senate-election-winner",
         "kalshi": "SENATENE-26"
+      },
+      "forecast": {
+        "p_left": 0.1702,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     },
     {
@@ -396,7 +441,13 @@
       "counts": {
         "reader": "alaska",
         "min_interval": 120
+      },
+      "forecast": {
+        "p_left": 0.6804,
+        "source": "G. Elliott Morris, final forecast",
+        "as_of": "2026-11-03"
       }
     }
-  ]
+  ],
+  "forecast_weight": 0.7
 }

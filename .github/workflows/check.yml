@@ -27,9 +27,6 @@ jobs:
           openssl x509 -inform der -in /tmp/ak.crt -out /tmp/ak.pem
           echo "NODE_EXTRA_CA_CERTS=/tmp/ak.pem" >> "$GITHUB_ENV"
       - run: node scripts/probe.mjs ${{ inputs.groups }}
-      - name: G. Elliott Morris's posts
-        continue-on-error: true
-        run: node scripts/read_fpo.mjs
       - name: Count readers against real files
         continue-on-error: true
         run: |

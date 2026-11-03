@@ -5,8 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { allCounts } from "./sources/states.mjs";
 import { allMarkets, kalshiControl } from "./sources/markets.mjs";
-import { bluesky, news, detectCall, featured } from "./sources/social.mjs";
-import { estimate, priorOf } from "../site/model.js";
+import { bluesky, news, detectCall, featured, liveEstimates } from "./sources/social.mjs";
+import { estimate, priorOf, blendLive } from "../site/model.js";
 import { log } from "./lib.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -66,7 +66,12 @@ const feed = [...posts, ...headlines, ...((prev.feed || []).filter((i) => Date.n
   .slice(0, 400);
 for (const i of feed) if (Object.values(calls).some((c) => c.url === i.url)) i.call = true;
 
-const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, featured: stars, feed, health };
+// G. Elliott Morris's posts are not published here; only win probabilities he states for a race
+// are kept, to be blended into that race's needle (site/model.js blendLive).
+const analyst = { ...(prev.analyst || {}), ...liveEstimates(races, stars) };
+for (const k of Object.keys(analyst)) if (Date.now() - Date.parse(analyst[k].time) > 4 * 3600e3) delete analyst[k];
+for (const [k, v] of Object.entries(analyst)) log(`[analyst] ${k}: ${v.by} ${Math.round(v.p_left * 100)}% for the first-listed candidate (${v.url})`);
+const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, analyst, feed, health };
 for (const r of races) {
   const m = markets[r.id] || {};
   const pm = (prev.races && prev.races[r.id] && prev.races[r.id].markets) || {};
@@ -82,7 +87,8 @@ const now = Math.floor(Date.now() / 1000);
 for (const r of races) {
   const base = readJSON(path.join(root, `site/data/baseline/${r.id}.json`));
   const c = out.races[r.id].counts;
-  const e = estimate(base, c && c.ok ? c : null, { prior: priorOf(r), turnout: r.turnout || config.turnout_default, late_share: r.late_share, rcv: r.rcv });
+  const e = estimate(base, c && c.ok ? c : null, { prior: priorOf(r, config.forecast_weight), turnout: r.turnout || config.turnout_default, late_share: r.late_share, rcv: r.rcv });
+  e.p = blendLive(e.p, analyst[r.id], Date.now(), e.reported).p;
   const h = (history[r.id] = history[r.id] || []);
   const last = h[h.length - 1];
   const point = [now, +e.p.toFixed(4), +(e.margin * 100).toFixed(2), +e.reported.toFixed(3)];

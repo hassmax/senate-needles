@@ -179,7 +179,7 @@ export async function featured(cfg, races, health) {
         const race = raceOf(races, text);
         const quoted = p.embed && p.embed.record && (p.embed.record.value || (p.embed.record.record && p.embed.record.record.value));
         posts.push({
-          id: p.uri, time, text: excerpt(text, 300), url: postUrl(p), race: race ? race.id : null,
+          id: p.uri, time, text: excerpt(text, 300), fullText: text, url: postUrl(p), race: race ? race.id : null,
           images: p.embed && p.embed.images ? p.embed.images.length : (p.embed && p.embed.media && p.embed.media.images ? p.embed.media.images.length : 0),
           quote: quoted && quoted.text ? excerpt(quoted.text, 140) : null,
         });
@@ -193,4 +193,46 @@ export async function featured(cfg, races, health) {
     }
   }
   return out;
+}
+
+// Win probabilities an analyst states in a post, e.g. "Brown now has an 80% chance" or "Democrats
+// are 3 in 4 to hold Michigan". Only sentences that name one tracked race and use chance/odds
+// words count; vote shares ("52% of the vote", "52-47", "% reporting") are ignored.
+export function statedChance(races, text) {
+  const out = [];
+  for (const sentence of String(text || "").split(/(?<=[.!?\n])\s+/)) {
+    if (!/\b(chances?|odds|probability|likely|favou?red|forecast|model)\b/i.test(sentence)) continue;
+    if (/(% of the vote|% in\b|reporting|counted|turnout|\d+\s?[-–]\s?\d+\b|margin)/i.test(sentence)) continue;
+    const race = raceOf(races, sentence) || null;
+    if (!race) continue;
+    let p = null;
+    const m1 = sentence.match(/(\d{1,2}(?:\.\d+)?)\s?(?:%|percent)/i);
+    const m2 = sentence.match(/\b(\d{1,2})\s?(?:in|out of)\s?(\d{1,3})\b/i);
+    if (m1) p = +m1[1] / 100; else if (m2 && +m2[2] > 0 && +m2[1] <= +m2[2]) p = +m2[1] / +m2[2];
+    if (p == null || p <= 0 || p >= 1) continue;
+    const at = (re) => { const m = sentence.search(re); return m < 0 ? Infinity : m; };
+    const num = m1 ? sentence.indexOf(m1[0]) : sentence.indexOf(m2[0]);
+    const dist = (c) => Math.abs(at(new RegExp(`\\b${c.last}\\b`)) - num);
+    const partyRe = (c) => c.party === "D" ? /\bDemocrat/i : c.party === "R" ? /\bRepublican|\bGOP\b/i : /\bindependent/i;
+    let side = null;
+    const dl = dist(race.left), dr = dist(race.right);
+    if (dl !== Infinity || dr !== Infinity) side = dl <= dr ? "left" : "right";
+    else if (partyRe(race.left).test(sentence) !== partyRe(race.right).test(sentence)) side = partyRe(race.left).test(sentence) ? "left" : "right";
+    if (!side) continue;
+    out.push({ race: race.id, p_left: side === "left" ? p : 1 - p });
+  }
+  return out;
+}
+
+export function liveEstimates(races, accounts) {
+  const est = {};
+  for (const a of accounts || []) {
+    for (const post of [...(a.posts || [])].sort((x, y) => Date.parse(x.time) - Date.parse(y.time))) {
+      if (Date.now() - Date.parse(post.time) > 4 * 3600e3) continue;
+      for (const e of statedChance(races, post.fullText || post.text)) {
+        est[e.race] = { p_left: e.p_left, time: post.time, url: post.url, by: a.name };
+      }
+    }
+  }
+  return est;
 }

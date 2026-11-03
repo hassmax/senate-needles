@@ -7,7 +7,11 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
 ## What the page shows
 
 - **The needle**: this site's own rough estimate of each candidate's chance to win. Before votes are
-  counted, it sits on the final polling average. As counties report, it compares each county's
+  counted, it sits on a starting point that blends the final polling average (30%) with G. Elliott
+  Morris's final forecast (70%, entered by hand in `config/races.json`). When Morris posts a win
+  probability for a race on Bluesky tonight, the collector reads it and blends it into that needle
+  (half weight when posted, halving each hour and as the count comes in). His posts aren't shown
+  separately. As counties report, it compares each county's
   count with how that county voted for president in 2024 and projects the votes still out (see
   `site/model.js`). It is not a professional forecast.
 - **Ticks on the dial**: K (Kalshi) and P (Polymarket) betting prices, and a hollow mark for the

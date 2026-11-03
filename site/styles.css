@@ -163,22 +163,3 @@ a { color: inherit; }
   .needle-wrap .arm, .needle-wrap.jitter .arm { transition: none; }
 }
 
-.featured { border-bottom: 1px solid var(--line); max-height: 46vh; overflow-y: auto; flex: none; }
-@media (max-width: 980px) { .featured { max-height: none; } }
-.featured-head { padding: 12px 14px 6px; position: sticky; top: 0; background: var(--panel); z-index: 1; }
-.featured-head h2 { margin: 0; font-size: 16px; }
-.featured-head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
-.featured-head a { color: var(--muted); }
-.featured ol { list-style: none; margin: 0; padding: 0 0 6px; }
-.featured li { padding: 8px 14px; font-size: 13px; border-top: 1px solid var(--line); }
-.featured li.new { box-shadow: inset 3px 0 0 var(--accent); }
-.featured .when { color: var(--muted); font-size: 12px; display: flex; gap: 6px; align-items: baseline; }
-.featured .tag { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
-.featured .txt { margin: 3px 0 0; overflow-wrap: anywhere; white-space: pre-line; }
-.featured .quote { margin: 4px 0 0; padding-left: 8px; border-left: 2px solid var(--line); color: var(--muted); font-size: 12px; }
-.featured a { text-decoration: none; }
-.featured a:hover .txt { text-decoration: underline; }
-.morris { font-size: 12px; background: var(--chip); border-radius: 6px; padding: 6px 8px; }
-.morris b { font-weight: 600; }
-.morris a { text-decoration: none; }
-.morris a:hover span { text-decoration: underline; }

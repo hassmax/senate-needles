@@ -78,12 +78,17 @@ test("probit inverts phi", async () => {
   for (const p of [0.01, 0.2, 0.5, 0.63, 0.77, 0.99]) assert.ok(Math.abs(phi(probit(p)) - p) < 1e-6, p);
 });
 
-test("a forecast sets the starting point to its own probability", async () => {
-  const { priorOf, estimate: est } = await import("../site/model.js");
-  const race = { prior: { margin: 2.8, sd: 5.5 }, forecast: { p_left: 0.62, margin: 1.9, source: "Morris" } };
-  const pr = priorOf(race);
-  assert.ok(Math.abs(phi(pr.margin / pr.sd) - 0.62) < 1e-6);
-  assert.ok(Math.abs(est(base, null, { prior: pr, turnout: 0.8 }).p - 0.62) < 1e-6);
-  const onlyP = priorOf({ prior: { margin: 2.8, sd: 5.5 }, forecast: { p_left: 0.3 } });
-  assert.ok(Math.abs(phi(onlyP.margin / onlyP.sd) - 0.3) < 1e-6 && onlyP.margin < 0);
+test("the starting point blends the forecast with the polls", async () => {
+  const { priorOf, blendLive, probit } = await import("../site/model.js");
+  const race = { prior: { margin: 2.8, sd: 5.5 }, forecast: { p_left: 0.661 } };
+  const pr = priorOf(race, 0.7);
+  const want = 0.7 * probit(0.661) + 0.3 * (2.8 / 5.5);
+  assert.ok(Math.abs(pr.margin / pr.sd - want) < 1e-9);
+  assert.equal(priorOf({ prior: { margin: 2.8, sd: 5.5 } }).from, "polls");
+  const now = Date.parse("2026-11-04T02:00:00Z");
+  const fresh = blendLive(0.6, { p_left: 0.9, time: "2026-11-04T02:00:00Z" }, now, 0);
+  assert.ok(fresh.p > 0.7 && fresh.p < 0.9 && Math.abs(fresh.w - 0.5) < 1e-9);
+  const old = blendLive(0.6, { p_left: 0.9, time: "2026-11-04T00:00:00Z" }, now, 0);
+  assert.ok(old.w < 0.13 && old.p < fresh.p);
+  assert.equal(blendLive(0.6, { p_left: 0.9, time: "2026-11-04T02:00:00Z" }, now, 1).p, 0.6);
 });

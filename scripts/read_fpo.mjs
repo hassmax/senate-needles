@@ -1,32 +1,18 @@
-// Looks at FiftyPlusOne's public Senate forecast page (G. Elliott Morris's model) for the data it
-// loads: embedded page data, script files, and JSON/CSV addresses mentioning the forecast.
+// Reads FiftyPlusOne's public Senate forecast (G. Elliott Morris's model) from the page data its
+// SvelteKit site serves at <page>/__data.json, and prints anything about the tracked races.
 import { UA } from "./lib.mjs";
-const pages = ["https://fiftyplusone.news/forecast/senate", "https://www.fiftyplusone.news/forecast/senate"];
 const short = (s, n) => s.replace(/\s+/g, " ").slice(0, n);
-for (const url of pages) {
+for (const url of ["https://fiftyplusone.news/forecast/senate/__data.json", "https://fiftyplusone.news/forecast/senate/__data.json?x-sveltekit-invalidated=01"]) {
   try {
-    const res = await fetch(url, { headers: { "User-Agent": UA }, redirect: "follow" });
-    const html = await res.text();
-    console.log(`\n### ${url} -> ${res.status} ${res.url} ${html.length} bytes ${res.headers.get("content-type")}`);
-    const next = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (next) console.log("NEXT_DATA:", short(next[1], 3000));
-    console.log("HTML:", short(html, 3200));
-    const scripts = [...html.matchAll(/(?:<script[^>]+src|<link[^>]+href)=["']([^"']+\.(?:js|mjs)[^"']*)["']/g)].map((m) => new URL(m[1], res.url).href);
-    console.log("scripts:", scripts.join(" | "));
-    const urls = new Set([...html.matchAll(/["'(]((?:https?:)?\/\/[^"')\s]+\.(?:json|csv)[^"')\s]*|\/[^"')\s]+\.(?:json|csv)[^"')\s]*)/g)].map((m) => m[1]));
-    console.log("data urls in page:", [...urls].join(" | "));
-    for (const k of ["Maine", "Ohio", "Talarico", "Peltola"]) {
-      const i = html.indexOf(k);
-      if (i >= 0) console.log(`near ${k}:`, short(html.slice(Math.max(0, i - 300), i + 600), 900));
+    const res = await fetch(url, { headers: { "User-Agent": UA } });
+    const t = await res.text();
+    console.log(`\n### ${url} -> ${res.status} ${res.headers.get("content-type")} ${t.length} bytes`);
+    console.log("head:", short(t, 2500));
+    for (const k of ["Maine", "Ohio", "Texas", "Alaska", "Iowa", "Kansas", "Nebraska", "Michigan", "Florida", "South Carolina", "Talarico", "Peltola"]) {
+      let i = t.indexOf(k), n = 0;
+      while (i >= 0 && n < 2) { console.log(`near ${k}:`, short(t.slice(Math.max(0, i - 250), i + 450), 700)); i = t.indexOf(k, i + 1); n++; }
     }
-    for (const src of scripts.slice(0, 15)) {
-      try {
-        const js = await (await fetch(src, { headers: { "User-Agent": UA } })).text();
-        const found = new Set([...js.matchAll(/["'`]((?:https?:\/\/[^"'`\s]+)?\/[^"'`\s]*?(?:\.json|\.csv|\/api\/)[^"'`\s]*)["'`]/g)].map((m) => m[1]));
-        if (found.size) console.log(`in ${src.slice(0, 90)}:`, [...found].slice(0, 25).join(" | "));
-      } catch (e) { console.log("script", src, e.message); }
-    }
-    break;
+    if (res.ok) break;
   } catch (e) { console.log(url, e.message); }
 }
 process.exit(0);

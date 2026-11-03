@@ -533,7 +533,8 @@
         "basis": "Trump +31 in 2024; forecast swing D+8.5 gives Barr +22; Booker lost by 24 in the 2022 Republican year, about Barr +14 in tonight's forecast environment; midpoint Barr +18",
         "watch": "Kentucky's eastern counties close at 6 pm ET and count fast: the night's first statewide read on how far the national environment has moved.",
         "expected_votes": 1550000,
-        "min_interval": 180
+        "min_interval": 180,
+        "ddhq_state": "Kentucky"
       },
       {
         "id": "IN-01",

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { allCounts, allBellwethers } from "./sources/states.mjs";
 import { allMarkets, kalshiControl, polymarketControl } from "./sources/markets.mjs";
-import { ddhq, ddhqCount } from "./sources/ddhq.mjs";
+import { ddhq, ddhqCount, ddhqClue, clueRaces } from "./sources/ddhq.mjs";
 import { bluesky, news, detectCall, featured, liveEstimates } from "./sources/social.mjs";
 import { needles } from "../site/model.js";
 import { log } from "./lib.mjs";
@@ -39,7 +39,7 @@ const [counts, markets, control, polyControl, dd, posts, headlines, stars] = awa
   safe("markets", () => allMarkets(races, cache.markets, health), {}),
   safe("control", () => kalshiControl(), prev.control && prev.control.kalshi),
   safe("control polymarket", () => polymarketControl(), prev.control && prev.control.polymarket),
-  safe("ddhq", () => ddhq(feedCfg.ddhq, races, prev.ddhq, since * 1000, health), prev.ddhq || { counts: {} }),
+  safe("ddhq", () => ddhq(feedCfg.ddhq, [...races, ...clueRaces((config.bellwethers || {}).list)], prev.ddhq, since * 1000, health), prev.ddhq || { counts: {} }),
   safe("bluesky", () => bluesky(feedCfg.bluesky || {}, races, health, cache.social), []),
   safe("news", () => news(races, health), []),
   safe("featured", () => featured(feedCfg.featured, races, health), prev.featured || []),
@@ -48,6 +48,11 @@ const [counts, markets, control, polyControl, dd, posts, headlines, stars] = awa
 // Early-clue House districts (after the Senate counts, so Florida's file is already in hand).
 cache.clues = cache.clues || {};
 const clues = await safe("clues", () => allBellwethers((config.bellwethers || {}).list, prev.clues, health, cache.clues), prev.clues || {});
+// A statewide clue whose own site refuses us (Kentucky's) uses Decision Desk HQ's latest update.
+for (const b of clueRaces((config.bellwethers || {}).list)) {
+  const du = dd && dd.counts && dd.counts[b.id];
+  if (du && !(clues[b.id] && clues[b.id].ok && clues[b.id].via !== "ddhq")) clues[b.id] = ddhqClue(du);
+}
 
 // Race calls: from a call source's own post (config/feed.json "calls"), or set by hand in races.json.
 const calls = {};

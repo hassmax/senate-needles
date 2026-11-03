@@ -46,6 +46,10 @@ export function statedControl(text) {
   return null;
 }
 
+// Statewide early clues (config bellwethers with "ddhq_state", e.g. Kentucky's Senate race) can be
+// read from the same posts: they are matched like races.
+export const clueRaces = (list) => (list || []).filter((b) => b.ddhq_state).map((b) => ({ ...b, state: b.ddhq_state }));
+
 export async function ddhq(cfg, races, prev, since, health) {
   const handle = (cfg && cfg.handle) || "decisiondeskhq.bsky.social";
   const counts = { ...((prev && prev.counts) || {}) };
@@ -75,6 +79,10 @@ export async function ddhq(cfg, races, prev, since, health) {
 }
 
 // A DDHQ update in the shape of an official statewide count (site/model.js estimate).
+// A DDHQ update as an early-clue count (its estimate of the share counted stands in for precincts).
+export const ddhqClue = (u) => ({ ok: u.left + u.right + u.other > 0, left: u.left, right: u.right, other: u.other, precincts: [u.pct_in, 100],
+  unitsAre: "expected vote (DDHQ estimate)", via: "ddhq", url: u.url, updated: u.time, votes: u.left + u.right + u.other });
+
 export function ddhqCount(u) {
   const votes = u.left + u.right + u.other;
   return {

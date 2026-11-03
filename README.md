@@ -31,7 +31,7 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   District, feed the same national reading. Each has an `expected` result in `config/races.json`;
   a district counts for less than a statewide race and only once some of it has reported.
   Florida's come from the same file as its Senate race; Virginia's from the Department of
-  Elections' results API; Kentucky's from the State Board's live page (read every 3 minutes);
+  Elections' results API; Kentucky's from the State Board's live page (read every 3 minutes; it refuses GitHub's servers, so Decision Desk HQ's Kentucky updates stand in);
   Indiana's from the state's election-night JSON.
 - **Ticks on the dial**: K (Kalshi) and P (Polymarket) betting prices, and a hollow mark for the
   starting point. They are shown beside the estimate, never mixed into it.

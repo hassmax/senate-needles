@@ -182,3 +182,14 @@ test("Decision Desk HQ vote updates and control statements from its Bluesky post
   assert.equal(c.ok, true);
   assert.ok(Math.abs(c.expected_votes - 2354567 / 0.34) < 1);
 });
+
+test("Kentucky's Senate clue can come from a Decision Desk HQ update", async () => {
+  const { parseRaceUpdate, clueRaces, ddhqClue } = await import("../scripts/sources/ddhq.mjs");
+  const { bellwetherEvidence } = await import("../site/model.js");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const u = parseRaceUpdate([...cfg.races, ...clueRaces(cfg.bellwethers.list)], "DDHQ Race Update (est. 40% in): Kentucky US Senate Andy Barr (R): 300,000 (55%) Charles Booker (D): 240,000 (44%) Follow more results here");
+  assert.equal(u.race, "KY-SEN");
+  const bw = cfg.bellwethers.list.find((b) => b.id === "KY-SEN");
+  const e = bellwetherEvidence(bw, ddhqClue({ ...u, time: "2026-11-03T23:30:00Z", url: "x" }), 7);
+  assert.ok(e && Math.abs(e.f - 0.4) < 1e-9 && e.d > 0); // Barr +11 vs. expected +18: better for Democrats
+});

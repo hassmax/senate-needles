@@ -6,9 +6,12 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://enr.elections.virginia.gov/results/public/main-SDUQU7SI.js",
-    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General/ballot-items",
-    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-August-Democratic-Primary/ballot-items",
+    "https://elect.ky.gov/results/Pages/default.aspx",
+    "https://elect.ky.gov/Resources/Pages/Election-Results.aspx",
+    "https://results.enr.clarityelections.com/KY/",
+    "https://enr.indianavoters.in.gov/",
+    "https://enr.indianavoters.in.gov/site/index.html",
+    "https://indianavoters.in.gov/ENR/",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -84,7 +87,7 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["ballot-items", "/reports", "blobName", "api/elections", "Representative", "voteCount", "ballotOptions"]) {
+    for (const k of ["clarity", "enr", "json", "2026", "General", "results"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }

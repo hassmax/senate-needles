@@ -67,7 +67,7 @@ function buildNeedle(race) {
   const L = partyVar(race.left.party), Rr = partyVar(race.right.party);
   const fills = [`var(--${L})`, `color-mix(in srgb, var(--${L}) 60%, var(--${L}-soft))`, `var(--${L}-soft)`, "var(--toss)",
     `var(--${Rr}-soft)`, `color-mix(in srgb, var(--${Rr}) 60%, var(--${Rr}-soft))`, `var(--${Rr})`];
-  const svg = svgEl("svg", { viewBox: "0 0 320 196", role: "img" });
+  const svg = svgEl("svg", { viewBox: "0 0 320 214", role: "img" });
   BANDS.forEach(([a, b], i) => svg.append(svgEl("path", { d: bandPath(a, b), fill: fills[i], stroke: "var(--panel)", "stroke-width": "1.5" })));
   const [mx, my] = arcPoint(0.5, R_OUT + 4);
   svg.append(svgEl("line", { x1: mx, y1: my, x2: mx, y2: my - 8, stroke: "var(--faint)", "stroke-width": "1.5" }));
@@ -77,14 +77,17 @@ function buildNeedle(race) {
   ln.textContent = race.left.last;
   const rn = svgEl("text", { x: CX + (R_OUT + R_IN) / 2, y: CY + 22, "text-anchor": "middle", class: "gauge-name", fill: `var(--${Rr})` });
   rn.textContent = race.right.last;
-  svg.append(ln, rn);
+  // Each side's chance, under its name
+  const lp = svgEl("text", { x: CX - (R_OUT + R_IN) / 2, y: CY + 46, "text-anchor": "middle", class: "gauge-pct", fill: `var(--${L})` });
+  const rp = svgEl("text", { x: CX + (R_OUT + R_IN) / 2, y: CY + 46, "text-anchor": "middle", class: "gauge-pct", fill: `var(--${Rr})` });
+  svg.append(ln, rn, lp, rp);
   const ticks = svgEl("g", {});
   svg.append(ticks);
   const arm = svgEl("g", { class: "arm" });
   arm.append(svgEl("path", { d: `M${CX},${CY - 5} L${CX - R_OUT + 6},${CY} L${CX},${CY + 5} Z`, fill: "var(--needle)" }));
   svg.append(arm, svgEl("circle", { cx: CX, cy: CY, r: 9, fill: "var(--needle)" }), svgEl("circle", { cx: CX, cy: CY, r: 3.5, fill: "var(--panel)" }));
   const wrap = el("div", { class: "needle-wrap" }, svg);
-  return { wrap, svg, arm, ticks };
+  return { wrap, svg, arm, ticks, lp, rp };
 }
 
 function drawTicks(g, marks) {
@@ -203,10 +206,18 @@ function updateCard(race, card) {
   const lab = lean(est.p);
   card.needle.svg.setAttribute("aria-label", `${fav} ${pct(fp)}% chance to win (${est.mode === "market" ? "market odds" : "estimate"})`);
 
-  // Headline + estimate
+  // Headline: the leader's chance, large, in their party's color; both sides' chances on the dial
+  const shown = (x) => (x > 0.995 ? ">99" : x < 0.005 ? "<1" : pct(x));
+  card.needle.lp.textContent = `${shown(est.p)}%`;
+  card.needle.rp.textContent = `${shown(1 - est.p)}%`;
+  card.needle.lp.classList.toggle("lead", est.p >= 0.5);
+  card.needle.rp.classList.toggle("lead", est.p < 0.5);
+  const favSide = est.p >= 0.5 ? race.left : race.right;
   card.headline.replaceChildren(
-    lab === "Tossup" ? "Tossup " : `${fav} ${fp > 0.995 ? ">99" : pct(fp)}% `,
-    el("span", { class: "lean", text: lab === "Tossup" ? `(${leftName} ${pct(est.p)}%)` : `${est.mode === "market" ? "market odds" : "chance to win"}` }),
+    el("span", { class: "big num", style: `color:var(--${partyVar(favSide.party)})`, text: `${shown(fp)}%` }),
+    el("span", { class: "who" },
+      el("b", { text: fav }),
+      el("span", { class: "lean", text: `${est.mode === "market" ? "market odds" : "chance to win"}${lab === "Tossup" ? " · tossup" : ""}` })),
   );
   if (est.mode === "model" || est.mode === "statewide") {
     card.est.textContent = `Est. final margin: ${marginText(race, est.margin)} · 80% range ${marginText(race, est.lo)} to ${marginText(race, est.hi)}`;

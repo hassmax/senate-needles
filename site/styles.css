@@ -110,8 +110,13 @@ a { color: inherit; }
 .gauge-name { font-size: 13px; font-weight: 700; }
 .tick-label { font-size: 10px; font-weight: 700; fill: var(--muted); }
 
-.headline { text-align: center; font-size: 17px; font-weight: 700; margin-top: -4px; }
-.headline .lean { font-weight: 400; color: var(--muted); font-size: 14px; }
+.gauge-pct { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; opacity: 0.75; }
+.gauge-pct.lead { font-weight: 800; opacity: 1; }
+.headline { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: -2px; }
+.headline .big { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.headline .who { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+.headline .who b { font-size: 18px; }
+.headline .lean { font-weight: 400; color: var(--muted); font-size: 13px; }
 .est { text-align: center; color: var(--muted); font-size: 13px; }
 .bar { height: 6px; border-radius: 3px; background: var(--toss); overflow: hidden; margin: 4px 0 2px; }
 .bar > span { display: block; height: 100%; background: var(--ink); opacity: 0.55; }
@@ -158,6 +163,8 @@ a { color: inherit; }
 
 .fatal { position: fixed; inset: auto 16px 16px 16px; background: var(--accent); color: #fff; padding: 12px 14px;
   border-radius: 8px; font-size: 13px; z-index: 9; }
+
+@media (max-width: 420px) { .headline .big { font-size: 40px; } }
 
 @media (prefers-reduced-motion: reduce) {
   .needle-wrap .arm, .needle-wrap.jitter .arm { transition: none; }

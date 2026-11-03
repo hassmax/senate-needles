@@ -7,3 +7,5 @@ Election-night needles for 10 close 2026 Senate races. Owner: a law student, not
 - Markets are shown beside the needle, never mixed into the estimate. Race calls only from a call source's own post or a hand call in `config/races.json`.
 - Show only short excerpts and links for posts and headlines.
 - This sandbox can't reach most sources; test them with the "Check sources" workflow.
+- G. Elliott Morris's analysis is factored into the needles, not shown separately (owner's choice): `forecast` in races.json (his final forecast, entered by hand) blends 70/30 with the polling average into each starting point (`priorOf`); win probabilities he states on Bluesky are parsed (`statedChance`) and blended in (`blendLive`). Don't add a panel or card lines for his posts.
+- Don't read fiftyplusone.news automatically: its terms forbid automated harvesting and publishing its data. Enter numbers by hand, with a source note.

@@ -11,7 +11,10 @@ const NUM = new Intl.NumberFormat("en-US");
 const S = {
   config: null, baselines: {}, live: null, history: {}, filter: "top", seenFeed: null,
   jitter: true, cards: {}, est: {}, lastOk: 0, lastGenerated: null,
+  stars: {}, seenStars: null,
 };
+const BSKY_FEED = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed";
+const STAR_MS = 30000;
 
 function fatal(msg) {
   const el = document.getElementById("fatal");
@@ -147,6 +150,7 @@ function buildCard(race) {
     meta: el("div", { class: "meta" }),
     tally: el("div", { class: "tally" }),
     call: el("div", { class: "callbox" }),
+    morris: el("div", { class: "morris" }),
     markets: el("div", { class: "markets" }),
     spark: svgEl("svg", { class: "spark", viewBox: "0 0 300 34", preserveAspectRatio: "none", "aria-hidden": "true" }),
     note: el("div", { class: "note" }),
@@ -154,7 +158,7 @@ function buildCard(race) {
     p: 0.5, band: [0.5, 0.5],
   };
   card.head.append(el("h3", { text: race.title }), card.status);
-  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.spark, card.note, card.sources);
+  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.morris, card.markets, card.spark, card.note, card.sources);
   return card;
 }
 
@@ -239,6 +243,9 @@ function updateCard(race, card) {
     card.call.append(call.url ? el("a", { href: call.url, target: "_blank", rel: "noopener", text: txt + " ↗" }) : txt);
   }
 
+  // The featured analyst's latest post on this race (last 18 hours)
+  renderCardStar(race, card);
+
   // Markets
   card.markets.replaceChildren();
   const mline = (label, m) => {
@@ -286,6 +293,91 @@ function drawSpark(svg, pts, race) {
   }));
   const title = svgEl("title", {}); title.textContent = `${race.left.last}'s chance over the night (top = ${race.left.last}, bottom = ${race.right.last})`;
   svg.append(title);
+}
+
+// ---------- featured analyst (G. Elliott Morris) ----------
+function raceOfText(text) {
+  const t = String(text || "");
+  const hits = S.config.races.filter((r) =>
+    (new RegExp(`\\b${r.state}\\b`, "i").test(t) && /senat/i.test(t)) || t.includes(r.left.name) || t.includes(r.right.name) ||
+    (new RegExp(`\\b${r.left.last}\\b`).test(t) && new RegExp(`\\b${r.right.last}\\b`).test(t)) ||
+    new RegExp(`\\b(${r.left.last}|${r.right.last})\\b`).test(t) && new RegExp(`\\b${r.state}\\b`, "i").test(t));
+  return hits.length === 1 ? hits[0].id : null;
+}
+function mergeStars(list) {
+  for (const a of list || []) {
+    const cur = S.stars[a.handle] || { ...a, posts: [] };
+    const byId = new Map(cur.posts.map((p) => [p.id, p]));
+    for (const p of a.posts || []) byId.set(p.id, p);
+    cur.name = a.name || cur.name; cur.about = a.about || cur.about;
+    cur.posts = [...byId.values()].sort((x, y) => Date.parse(y.time) - Date.parse(x.time)).slice(0, 40);
+    S.stars[a.handle] = cur;
+  }
+}
+async function refreshStars() {
+  const accts = Object.values(S.stars);
+  await Promise.all(accts.map(async (a) => {
+    try {
+      const res = await fetch(`${BSKY_FEED}?actor=${encodeURIComponent(a.handle)}&limit=30&filter=posts_and_author_threads`);
+      if (!res.ok) return;
+      const j = await res.json();
+      const posts = [];
+      for (const f of j.feed || []) {
+        if (f.reason) continue;
+        const p = f.post, text = (p.record && p.record.text) || "";
+        const time = (p.record && p.record.createdAt) || p.indexedAt;
+        if (Date.now() - Date.parse(time) > 36 * 3600e3) continue;
+        const qv = p.embed && p.embed.record && (p.embed.record.value || (p.embed.record.record && p.embed.record.record.value));
+        const imgs = p.embed && (p.embed.images || (p.embed.media && p.embed.media.images));
+        posts.push({ id: p.uri, time, text: text.length > 300 ? text.slice(0, 299) + "…" : text,
+          url: `https://bsky.app/profile/${p.author.handle}/post/${p.uri.split("/").pop()}`, race: raceOfText(text),
+          images: imgs ? imgs.length : 0, quote: qv && qv.text ? qv.text.slice(0, 140) : null });
+      }
+      mergeStars([{ handle: a.handle, posts }]);
+    } catch { /* the collector's copy is still shown */ }
+  }));
+  renderStars();
+  for (const race of S.config.races) renderCardStar(race, S.cards[race.id]);
+}
+function renderStars() {
+  const box = document.getElementById("featured");
+  const accts = Object.values(S.stars);
+  if (!accts.length) { box.hidden = true; return; }
+  box.hidden = false;
+  box.replaceChildren();
+  const first = S.seenStars == null;
+  S.seenStars = S.seenStars || new Set();
+  for (const a of accts) {
+    box.append(el("div", { class: "featured-head" },
+      el("h2", { text: a.name }),
+      el("p", {}, el("a", { href: `https://bsky.app/profile/${a.handle}`, target: "_blank", rel: "noopener", text: "@" + a.handle }), a.about ? ` · ${a.about}` : "")));
+    const ol = el("ol");
+    if (!a.posts.length) ol.append(el("li", { text: "No posts in the last day and a half." }));
+    for (const p of a.posts.slice(0, 15)) {
+      const li = el("li", { class: !first && !S.seenStars.has(p.id) ? "new" : "" });
+      li.append(el("div", { class: "when" }, el("span", { text: fmtTime(p.time) + " ET" }), p.race ? el("span", { class: "tag", text: p.race }) : null,
+        p.images ? el("span", { class: "tag", text: p.images === 1 ? "image" : `${p.images} images` }) : null));
+      const a2 = el("a", { href: p.url, target: "_blank", rel: "noopener" }, el("p", { class: "txt", text: p.text }));
+      if (p.quote) a2.append(el("p", { class: "quote", text: p.quote }));
+      li.append(a2);
+      ol.append(li);
+      S.seenStars.add(p.id);
+    }
+    box.append(ol);
+  }
+}
+function renderCardStar(race, card) {
+  if (!card) return;
+  card.morris.replaceChildren();
+  let best = null, who = null;
+  for (const a of Object.values(S.stars)) {
+    const p = a.posts.find((x) => x.race === race.id && Date.now() - Date.parse(x.time) < 18 * 3600e3);
+    if (p && (!best || Date.parse(p.time) > Date.parse(best.time))) { best = p; who = a.name; }
+  }
+  card.morris.hidden = !best;
+  if (!best) return;
+  card.morris.append(el("a", { href: best.url, target: "_blank", rel: "noopener" },
+    el("b", { text: `${who}, ${fmtTime(best.time)}: ` }), el("span", { text: best.text.length > 180 ? best.text.slice(0, 179) + "…" : best.text })));
 }
 
 // ---------- jitter ----------
@@ -413,6 +505,8 @@ async function refresh() {
     if (live.generated !== S.lastGenerated) {
       S.live = live;
       S.lastGenerated = live.generated;
+      mergeStars(live.featured);
+      renderStars();
       try { S.history = await getJSON(DEMO ? "data/demo-history.json" : `data/history.json?t=${Date.now()}`); } catch { /* optional */ }
       renderAll();
     }
@@ -431,6 +525,10 @@ function renderAll() {
 
 async function boot() {
   S.config = await getJSON(`data/config.json?t=${Date.now()}`);
+  try {
+    const fc = await getJSON(`data/feed.json?t=${Date.now()}`);
+    mergeStars((fc.featured || []).map((a) => ({ ...a, posts: [] })));
+  } catch { /* the featured panel fills from live data instead */ }
   await Promise.all(S.config.races.map(async (r) => { S.baselines[r.id] = await getJSON(`data/baseline/${r.id}.json?v=${BUILD}`); }));
   const box = document.getElementById("races");
   for (const race of S.config.races) {
@@ -442,6 +540,8 @@ async function boot() {
   setupJitter();
   await refresh();
   setInterval(refresh, REFRESH_MS);
+  refreshStars();
+  setInterval(refreshStars, STAR_MS);
   setInterval(renderStatus, 5000);
   // Polls-close times pass without new data; re-render each minute so status chips change.
   setInterval(renderAll, 60000);

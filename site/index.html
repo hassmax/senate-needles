@@ -27,6 +27,7 @@
   <main class="layout">
     <section class="races" id="races" aria-label="Races"></section>
     <aside class="feed" aria-label="Live feed">
+      <section class="featured" id="featured" aria-label="Featured analyst" hidden></section>
       <div class="feed-head">
         <h2>Live feed</h2>
         <div class="chips" id="feed-filter" role="toolbar" aria-label="Filter the feed by race"></div>
@@ -44,6 +45,7 @@
       <li><b>The range</b> under each needle is the middle 80% of likely final margins. It narrows as the share of the expected vote still out shrinks.</li>
       <li><b>Market ticks</b> (K for Kalshi, P for Polymarket) are betting prices, shown separately. They are not part of the estimate. The hollow tick is the pre-election polling average.</li>
       <li><b>Race calls</b> appear only when a news organization's own post says so, with a link. The needle keeps showing the model.</li>
+      <li><b>G. Elliott Morris's analysis</b> (Strength In Numbers, FiftyPlusOne) is pinned at the top of the feed from his public Bluesky account, and his latest post on each race appears on its card. His posts are his own words, linked to the original.</li>
       <li><b>Where the counts come from.</b> Ohio, Florida, Alaska and Nebraska are read straight from their official election-night files: county by county, except Nebraska, which gives statewide totals only. Texas, Michigan, South Carolina, Iowa and Kansas block automated readers, and Maine posts no live count. Their needles show the Kalshi and Polymarket average, labelled "market odds". A counted state whose feed stops answering after its polls close switches to market odds the same way.</li>
       <li>Alaska counts absentee ballots for two weeks and uses ranked choice, so its range stays wide.</li>
     </ul>

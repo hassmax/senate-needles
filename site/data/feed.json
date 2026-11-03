@@ -1,0 +1,82 @@
+{
+  "_note": "Bluesky accounts read every update. Handles that are a web domain (apnews.com) are verified by Bluesky. 'calls' names the organization whose posts may set a race call; 'all_election' keeps any election post, not only ones naming a race. 'featured': accounts shown in their own pinned panel and on each race card (all their posts, refreshed in the browser every 30 seconds).",
+  "bluesky": {
+    "min_followers": 10000,
+    "queries": [
+      "race call Senate",
+      "AP race call",
+      "Decision Desk Senate"
+    ],
+    "accounts": [
+      {
+        "handle": "apnews.com",
+        "name": "The Associated Press",
+        "calls": "AP",
+        "all_election": true
+      },
+      {
+        "handle": "nytimes.com",
+        "name": "The New York Times"
+      },
+      {
+        "handle": "washingtonpost.com",
+        "name": "The Washington Post"
+      },
+      {
+        "handle": "npr.org",
+        "name": "NPR",
+        "all_election": true
+      },
+      {
+        "handle": "politico.com",
+        "name": "Politico",
+        "all_election": true
+      },
+      {
+        "handle": "cnn.com",
+        "name": "CNN"
+      },
+      {
+        "handle": "nbcnews.com",
+        "name": "NBC News"
+      },
+      {
+        "handle": "cbsnews.com",
+        "name": "CBS News"
+      },
+      {
+        "handle": "reuters.com",
+        "name": "Reuters"
+      },
+      {
+        "handle": "axios.com",
+        "name": "Axios"
+      },
+      {
+        "handle": "politicalwire.com",
+        "name": "Political Wire",
+        "all_election": true
+      },
+      {
+        "handle": "thehill.com",
+        "name": "The Hill"
+      },
+      {
+        "handle": "semafor.com",
+        "name": "Semafor"
+      },
+      {
+        "handle": "gelliottmorris.com",
+        "name": "G. Elliott Morris",
+        "all_election": true
+      }
+    ]
+  },
+  "featured": [
+    {
+      "handle": "gelliottmorris.com",
+      "name": "G. Elliott Morris",
+      "about": "Strength In Numbers; FiftyPlusOne forecast"
+    }
+  ]
+}

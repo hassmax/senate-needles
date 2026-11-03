@@ -161,3 +161,36 @@ export async function news(races, health) {
   }));
   return items;
 }
+
+// Featured accounts (config/feed.json "featured"): every post and thread reply of theirs from the
+// last 36 hours, not only ones naming a race, for the pinned panel and the race cards.
+export async function featured(cfg, races, health) {
+  const out = [];
+  for (const acct of cfg || []) {
+    try {
+      const j = await getJSON(`${FEED}?actor=${encodeURIComponent(acct.handle)}&limit=50&filter=posts_and_author_threads`);
+      const posts = [];
+      for (const f of j.feed || []) {
+        if (f.reason) continue; // reposts of other people's posts
+        const p = f.post;
+        const text = (p.record && p.record.text) || "";
+        const time = (p.record && p.record.createdAt) || p.indexedAt;
+        if (Date.now() - Date.parse(time) > 36 * 3600e3) continue;
+        const race = raceOf(races, text);
+        const quoted = p.embed && p.embed.record && (p.embed.record.value || (p.embed.record.record && p.embed.record.record.value));
+        posts.push({
+          id: p.uri, time, text: excerpt(text, 300), url: postUrl(p), race: race ? race.id : null,
+          images: p.embed && p.embed.images ? p.embed.images.length : (p.embed && p.embed.media && p.embed.media.images ? p.embed.media.images.length : 0),
+          quote: quoted && quoted.text ? excerpt(quoted.text, 140) : null,
+        });
+      }
+      posts.sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
+      out.push({ handle: acct.handle, name: acct.name, about: acct.about || "", posts: posts.slice(0, 40) });
+      health.push({ name: `featured @${acct.handle}`, ok: true });
+    } catch (e) {
+      log(`[featured] ${acct.handle}: ${e.message}`);
+      health.push({ name: `featured @${acct.handle}`, ok: false, detail: e.message });
+    }
+  }
+  return out;
+}

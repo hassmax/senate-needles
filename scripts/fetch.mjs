@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { allCounts } from "./sources/states.mjs";
 import { allMarkets, kalshiControl } from "./sources/markets.mjs";
-import { bluesky, news, detectCall } from "./sources/social.mjs";
+import { bluesky, news, detectCall, featured } from "./sources/social.mjs";
 import { estimate } from "../site/model.js";
 import { log } from "./lib.mjs";
 
@@ -32,12 +32,13 @@ const safe = async (label, fn, fallback) => {
   try { return await withTimeout(fn(), 50000, label); } catch (e) { log(`[${label}] ${e.message}`); health.push({ name: label, ok: false, detail: e.message }); return fallback; }
 };
 
-const [counts, markets, control, posts, headlines] = await Promise.all([
+const [counts, markets, control, posts, headlines, stars] = await Promise.all([
   safe("counts", () => allCounts(races, prev.races, cache.counts, health), {}),
   safe("markets", () => allMarkets(races, cache.markets, health), {}),
   safe("control", () => kalshiControl(), prev.control && prev.control.kalshi),
   safe("bluesky", () => bluesky(feedCfg.bluesky || {}, races, health, cache.social), []),
   safe("news", () => news(races, health), []),
+  safe("featured", () => featured(feedCfg.featured, races, health), prev.featured || []),
 ]);
 
 // Race calls: from a call source's own post (config/feed.json "calls"), or set by hand in races.json.
@@ -65,7 +66,7 @@ const feed = [...posts, ...headlines, ...((prev.feed || []).filter((i) => Date.n
   .slice(0, 400);
 for (const i of feed) if (Object.values(calls).some((c) => c.url === i.url)) i.call = true;
 
-const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, feed, health };
+const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, featured: stars, feed, health };
 for (const r of races) {
   const m = markets[r.id] || {};
   const pm = (prev.races && prev.races[r.id] && prev.races[r.id].markets) || {};

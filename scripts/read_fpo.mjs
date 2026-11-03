@@ -10,7 +10,8 @@ for (const url of pages) {
     console.log(`\n### ${url} -> ${res.status} ${res.url} ${html.length} bytes ${res.headers.get("content-type")}`);
     const next = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
     if (next) console.log("NEXT_DATA:", short(next[1], 3000));
-    const scripts = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => new URL(m[1], res.url).href);
+    console.log("HTML:", short(html, 3200));
+    const scripts = [...html.matchAll(/(?:<script[^>]+src|<link[^>]+href)=["']([^"']+\.(?:js|mjs)[^"']*)["']/g)].map((m) => new URL(m[1], res.url).href);
     console.log("scripts:", scripts.join(" | "));
     const urls = new Set([...html.matchAll(/["'(]((?:https?:)?\/\/[^"')\s]+\.(?:json|csv)[^"')\s]*|\/[^"')\s]+\.(?:json|csv)[^"')\s]*)/g)].map((m) => m[1]));
     console.log("data urls in page:", [...urls].join(" | "));

@@ -3,7 +3,7 @@
 // back to back all night. Usage: node scripts/fetch.mjs [--state state] [--out out]
 import fs from "node:fs";
 import path from "node:path";
-import { allCounts } from "./sources/states.mjs";
+import { allCounts, allBellwethers } from "./sources/states.mjs";
 import { allMarkets, kalshiControl } from "./sources/markets.mjs";
 import { bluesky, news, detectCall, featured, liveEstimates } from "./sources/social.mjs";
 import { needles } from "../site/model.js";
@@ -41,6 +41,9 @@ const [counts, markets, control, posts, headlines, stars] = await Promise.all([
   safe("featured", () => featured(feedCfg.featured, races, health), prev.featured || []),
 ]);
 
+// Early-clue House districts (after the Senate counts, so Florida's file is already in hand).
+const clues = await safe("clues", () => allBellwethers((config.bellwethers || {}).list, prev.clues, health), prev.clues || {});
+
 // Race calls: from a call source's own post (config/feed.json "calls"), or set by hand in races.json.
 const calls = {};
 for (const r of races) {
@@ -71,7 +74,7 @@ for (const i of feed) if (Object.values(calls).some((c) => c.url === i.url)) i.c
 const analyst = { ...(prev.analyst || {}), ...liveEstimates(races, stars) };
 for (const k of Object.keys(analyst)) if (Date.now() - Date.parse(analyst[k].time) > 4 * 3600e3) delete analyst[k];
 for (const [k, v] of Object.entries(analyst)) log(`[analyst] ${k}: ${v.by} ${Math.round(v.p_left * 100)}% for the first-listed candidate (${v.url})`);
-const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, analyst, feed, health };
+const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, analyst, clues, feed, health };
 for (const r of races) {
   const m = markets[r.id] || {};
   const pm = (prev.races && prev.races[r.id] && prev.races[r.id].markets) || {};
@@ -86,7 +89,7 @@ for (const r of races) {
 const now = Math.floor(Date.now() / 1000);
 const since = config.history_since ? Date.parse(config.history_since) / 1000 : 0;
 const baselines = Object.fromEntries(races.map((r) => [r.id, readJSON(path.join(root, `site/data/baseline/${r.id}.json`))]));
-const N = needles(races, baselines, out.races, analyst, config, Date.now());
+const N = needles(races, baselines, out.races, analyst, config, Date.now(), clues);
 if (N.national.used.length) log(`[national] counts so far run ${(N.national.shift * 100).toFixed(1)} pts from expectations (positive = Democrats), from ${N.national.used.join(", ")}`);
 for (const r of races) {
   const e = N.byRace[r.id].est;

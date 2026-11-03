@@ -137,7 +137,8 @@
         "p_left": 0.3834,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
-      }
+      },
+      "watch": "Axios: a Graham loss would likely sink the Republican Senate majority."
     },
     {
       "id": "TX",
@@ -178,7 +179,8 @@
         "p_left": 0.6516,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
-      }
+      },
+      "watch": "Axios: if Paxton is holding on, Republicans still have a path to keeping the Senate."
     },
     {
       "id": "MI",
@@ -450,5 +452,122 @@
     }
   ],
   "forecast_weight": 0.7,
-  "history_since": "2026-11-03T20:00:00Z"
+  "history_since": "2026-11-03T20:00:00Z",
+  "bellwethers": {
+    "_note": "Early-clue House races from Axios (Hans Nichols): states where voting ends early and counting is quick. Each one's count against 'expected' (left minus right, points) feeds the national shift that moves every Senate needle. 'expected' = 2024 presidential margin + the forecast national swing (D+8.5 vs. 2024, from a D+7 House vote) + about 2 points for an incumbent. Edit if better numbers turn up.",
+    "source": "Axios (Hans Nichols): races that could give early midterm clues",
+    "local_sd": 7,
+    "list": [
+      {
+        "id": "FL-14",
+        "label": "Florida 14th",
+        "state": "FL",
+        "district": 14,
+        "reader": "florida",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Kathy Castor",
+          "last": "Castor",
+          "party": "D",
+          "incumbent": true
+        },
+        "right": {
+          "name": "Mike Beltran",
+          "last": "Beltran",
+          "party": "R"
+        },
+        "expected": -2.5,
+        "basis": "Redrawn seat Trump carried by about 13 in 2024 (WUSF; not confirmed); forecast swing D+8.5; Castor incumbency +2",
+        "watch": "If Castor survives the redrawn seat, Republicans' House majority is in deep trouble."
+      },
+      {
+        "id": "FL-25",
+        "label": "Florida 25th",
+        "state": "FL",
+        "district": 25,
+        "reader": "florida",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Jared Moskowitz",
+          "last": "Moskowitz",
+          "party": "D",
+          "incumbent": true
+        },
+        "right": {
+          "name": "Republican",
+          "last": "Republican",
+          "party": "R"
+        },
+        "expected": 1.5,
+        "basis": "Trump +9 in 2024 (Axios); forecast swing D+8.5; Moskowitz incumbency +2",
+        "watch": "Republicans need to be close here to keep any hope of holding the House."
+      },
+      {
+        "id": "VA-01",
+        "label": "Virginia 1st",
+        "state": "VA",
+        "district": 1,
+        "reader": "virginia",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Shannon L. Taylor",
+          "last": "Taylor",
+          "party": "D"
+        },
+        "right": {
+          "name": "Rob Wittman",
+          "last": "Wittman",
+          "party": "R",
+          "incumbent": true
+        },
+        "expected": 1.5,
+        "basis": "Trump +5 in 2024 (Axios); forecast swing D+8.5; Wittman incumbency -2",
+        "watch": "A Democratic flip of this Trump +5 seat points to a very good night for Democrats."
+      },
+      {
+        "id": "VA-02",
+        "label": "Virginia 2nd",
+        "state": "VA",
+        "district": 2,
+        "reader": "virginia",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Elaine Luria",
+          "last": "Luria",
+          "party": "D"
+        },
+        "right": {
+          "name": "Jen Kiggans",
+          "last": "Kiggans",
+          "party": "R",
+          "incumbent": true
+        },
+        "expected": 3.5,
+        "basis": "October CNU poll Luria +3; 2024 baseline plus forecast swing about Luria +4",
+        "watch": "Tests whether a strong Republican incumbent can survive a Democratic wave."
+      },
+      {
+        "id": "VA-05",
+        "label": "Virginia 5th",
+        "state": "VA",
+        "district": 5,
+        "reader": "virginia",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Democrat",
+          "last": "Democrat",
+          "party": "D"
+        },
+        "right": {
+          "name": "John McGuire",
+          "last": "McGuire",
+          "party": "R",
+          "incumbent": true
+        },
+        "expected": -5.5,
+        "basis": "Trump +12 in 2024 (Axios); forecast swing D+8.5; McGuire incumbency -2",
+        "watch": "A Democratic flip of this Trump +12 seat points to a great night for Democrats."
+      }
+    ]
+  }
 }

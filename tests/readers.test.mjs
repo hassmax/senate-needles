@@ -85,3 +85,55 @@ test("stated win chances in an analyst's posts", async () => {
   assert.deepEqual(statedChance(races, "Talarico is winning 58% of the vote in Harris County, Texas Senate."), []);
   assert.deepEqual(statedChance(races, "Turnout in Kansas is up 12% from 2022."), []);
 });
+
+test("Florida House district totals from the statewide file", async () => {
+  const { floridaHouse } = await import("../scripts/sources/states.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bw = cfg.bellwethers.list.find((b) => b.id === "FL-14");
+  const rows = [
+    { OfficeDesc: "Representative in Congress", Juris1num: "14", PartyCode: "DEM", CanNameFirst: "Kathy", CanNameLast: "Castor", CanVotes: "1000", CountyCode: "HIL", Precincts: "100", PrecinctsReporting: "40" },
+    { OfficeDesc: "Representative in Congress", Juris1num: "14", PartyCode: "REP", CanNameFirst: "Mike", CanNameLast: "Beltran", CanVotes: "900", CountyCode: "HIL", Precincts: "100", PrecinctsReporting: "40" },
+    { OfficeDesc: "Representative in Congress", Juris1num: "15", PartyCode: "REP", CanNameFirst: "X", CanNameLast: "Y", CanVotes: "5000", CountyCode: "HIL", Precincts: "100", PrecinctsReporting: "40" },
+    { OfficeDesc: "United States Senator", Juris1num: "", PartyCode: "REP", CanNameFirst: "Ashley", CanNameLast: "Moody", CanVotes: "7000", CountyCode: "HIL", Precincts: "300", PrecinctsReporting: "100" },
+  ];
+  assert.deepEqual(floridaHouse(rows, bw), { left: 1000, right: 900, other: 0, precincts: [40, 100] });
+});
+
+test("an early-clue district moves the Senate needles once enough is in", async () => {
+  const { needles, bellwetherEvidence } = await import("../site/model.js");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bl = {};
+  for (const r of cfg.races) bl[r.id] = JSON.parse(fs.readFileSync(new URL(`../site/data/baseline/${r.id}.json`, import.meta.url)));
+  const bw = cfg.bellwethers.list.find((b) => b.id === "VA-05");
+  // Expected McGuire +5.5; the Democrat is up 2 with 80% of precincts in: 7.5 pts better for Democrats.
+  const counts = { ok: true, left: 51000, right: 49000, other: 0, precincts: [80, 100] };
+  assert.equal(bellwetherEvidence(bw, { ...counts, precincts: [2, 100] }), null);
+  const e = bellwetherEvidence(bw, counts);
+  assert.ok(Math.abs(e.d - 0.075) < 1e-9);
+  const t = Date.parse("2026-11-03T23:30:00Z");
+  const quiet = needles(cfg.races, bl, {}, {}, cfg, t, {});
+  const res = needles(cfg.races, bl, {}, {}, cfg, t, { "VA-05": counts });
+  assert.deepEqual(res.national.used, ["VA-05"]);
+  assert.ok(res.national.shift > 0.01 && res.national.shift < 0.03, String(res.national.shift));
+  assert.ok(res.byRace.TX.est.p > quiet.byRace.TX.est.p);
+});
+
+test("Virginia House district totals from the results API", async () => {
+  const { virginiaHouse } = await import("../scripts/sources/states.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bw = cfg.bellwethers.list.find((b) => b.id === "VA-01");
+  const t = (x) => [{ languageId: "en", text: x }];
+  const items = [
+    { name: t("Member, United States Senate"), reportingStatus: { reportingUnits: 1, totalUnits: 133 }, summaryResults: { ballotOptions: [{ name: t("Mark R. Warner"), voteCount: 5, party: { abbreviation: "D" } }] } },
+    { name: t("Member, House of Representatives (1st District)"), reportingStatus: { reportingUnits: 6, totalUnits: 18 },
+      summaryResults: { ballotOptions: [
+        { name: t("Shannon L. Taylor"), voteCount: 1200, party: { abbreviation: "D" } },
+        { name: t("Robert J. Wittman"), voteCount: 1100, party: { abbreviation: "R" } },
+        { name: t("Write In"), voteCount: 7, party: null }] } },
+    { name: t("Member, House of Representatives (11th District)"), reportingStatus: { reportingUnits: 0, totalUnits: 3 }, summaryResults: { ballotOptions: [] } },
+  ];
+  const r = virginiaHouse(items, bw);
+  assert.equal(r.left, 1200); assert.equal(r.right, 1100); assert.equal(r.other, 7);
+  assert.deepEqual(r.precincts, [6, 18]);
+  assert.equal(virginiaHouse(items, { ...bw, district: 4 }), null);
+});

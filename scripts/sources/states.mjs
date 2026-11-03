@@ -6,9 +6,13 @@ import { get, getJSON, unzip, parseDelimited, num, sideOf, log } from "../lib.mj
 const SENATE_RE = /united states senat|u\.?\s?s\.?\s+senat|us senat|senator,? u\.?s|^senat(e|or)$/i;
 
 // ---------- Florida: the Division of Elections' tab-separated election-night file ----------
+// The last Florida file read this run, so the House bellwethers can use it without another request.
+let floridaRows = null;
+
 async function florida(race, cfg) {
   const url = cfg.url || "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/3/2026&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download";
   const rows = parseDelimited(await get(url), "\t");
+  floridaRows = rows;
   const units = new Map();
   let pIn = 0, pAll = 0;
   const seenCounty = new Set();
@@ -235,6 +239,86 @@ export async function allCounts(races, prev, cache, health) {
       log(`[count] ${race.id}: ${e.message}`);
       health.push({ name: `count ${race.id}`, ok: false, detail: e.message });
       out[race.id] = old && old.ok ? { ...old, stale: true, error: e.message } : { ok: false, error: e.message, fetched: new Date().toISOString() };
+    }
+  }));
+  return out;
+}
+
+// ---------- House bellwethers (config/races.json "bellwethers") ----------
+// District totals for the early-clue House races: {left, right, other, precincts: [in, all]}.
+const HOUSE_RE = /representative in congress|united states representative|u\.?s\.? representative|member,? (of )?(the )?house of representatives|^representative$/i;
+
+export function floridaHouse(rows, bw) {
+  let left = 0, right = 0, other = 0, pIn = 0, pAll = 0;
+  const seen = new Set();
+  for (const r of rows || []) {
+    if (!HOUSE_RE.test(r.OfficeDesc || r.RaceName || "")) continue;
+    if (num(r.Juris1num) !== bw.district) continue;
+    const name = [r.CanNameFirst, r.CanNameLast].filter(Boolean).join(" ");
+    const side = sideOf(bw, { name, party: r.PartyCode || r.PartyName });
+    if (side === "left") left += num(r.CanVotes); else if (side === "right") right += num(r.CanVotes); else other += num(r.CanVotes);
+    const key = r.CountyCode || r.CountyName;
+    if (!seen.has(key)) { seen.add(key); pIn += num(r.PrecinctsReporting); pAll += num(r.Precincts); }
+  }
+  if (!seen.size) return null;
+  return { left, right, other, precincts: pAll ? [pIn, pAll] : null };
+}
+
+// Virginia's Department of Elections results site (Enhanced Voting): every contest, paged.
+const VA_API = "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General/ballot-items";
+let vaItems = null;
+async function virginiaItems() {
+  if (vaItems) return vaItems;
+  const all = [];
+  for (let offset = 0, page = 0; page < 20; page++) {
+    const j = await getJSON(`${VA_API}?limit=500&offset=${offset}`, { timeout: 30000 });
+    const data = j.data || [];
+    all.push(...data);
+    offset += data.length;
+    if (!data.length || offset >= (j.totalRecordCount || 0)) break;
+  }
+  return (vaItems = all);
+}
+const en = (arr) => ((arr || []).find((x) => /^en/i.test(x.languageId)) || (arr || [])[0] || {}).text || "";
+
+export function virginiaHouse(items, bw) {
+  const item = (items || []).find((it) => {
+    const m = en(it.name).match(/House of Representatives \((\d+)(?:st|nd|rd|th) District\)/i);
+    return m && +m[1] === bw.district;
+  });
+  if (!item) return null;
+  let left = 0, right = 0, other = 0;
+  for (const o of (item.summaryResults && item.summaryResults.ballotOptions) || []) {
+    const side = sideOf(bw, { name: en(o.name), party: (o.party && (o.party.abbreviation || en(o.party.name))) || "" });
+    if (side === "left") left += num(o.voteCount); else if (side === "right") right += num(o.voteCount); else other += num(o.voteCount);
+  }
+  const rs = item.reportingStatus || {};
+  return { left, right, other, precincts: rs.totalUnits ? [num(rs.reportingUnits), num(rs.totalUnits)] : null, unitsAre: "localities" };
+}
+
+const BW_READERS = {
+  virginia: async (bw) => virginiaHouse(await virginiaItems(), bw),
+  // Florida's districts come from the statewide file the Senate reader just fetched (no extra request).
+  florida: async (bw) => (floridaRows ? floridaHouse(floridaRows, bw) : undefined),
+};
+
+export async function allBellwethers(list, prev, health) {
+  const out = {};
+  await Promise.all((list || []).map(async (bw) => {
+    const old = prev && prev[bw.id];
+    const fn = BW_READERS[bw.reader];
+    if (!fn) { out[bw.id] = old || null; return; }
+    try {
+      const r = await fn(bw);
+      if (r === undefined) { out[bw.id] = old || null; return; } // nothing new this run
+      if (!r) { out[bw.id] = old || { ok: false, error: "district not in the results yet" }; return; }
+      const votes = r.left + r.right + r.other;
+      out[bw.id] = { ok: votes > 0, ...r, votes, fetched: new Date().toISOString() };
+      health.push({ name: `clue ${bw.id}`, ok: true, detail: `${votes} votes` });
+    } catch (e) {
+      log(`[clue] ${bw.id}: ${e.message}`);
+      health.push({ name: `clue ${bw.id}`, ok: false, detail: e.message });
+      out[bw.id] = old && old.ok ? { ...old, stale: true } : { ok: false, error: e.message };
     }
   }));
   return out;

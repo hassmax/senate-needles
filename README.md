@@ -19,6 +19,11 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   in, each counted state's departure from its starting point moves every other race's starting
   point by the shared part (each state is adjusted using the other states only). The overview bar
   shows the national reading; each card says how far it moved. Market prices are never used for this.
+- **Early clues**: five House races that report early and fast, from Axios's list (Florida's 14th
+  and 25th, Virginia's 1st, 2nd and 5th), feed the same national reading. Each has an `expected`
+  result in `config/races.json` (2024 presidential margin + forecast national swing + incumbency);
+  a district counts for less than a statewide race and only once some of it has reported. Florida's
+  come from the same file as its Senate race; Virginia's from the Department of Elections' results API.
 - **Ticks on the dial**: K (Kalshi) and P (Polymarket) betting prices, and a hollow mark for the
   polling average. They are shown beside the estimate, never mixed into it.
 - **Which states have live counts**: Ohio (the Secretary of State's NIST XML feed), Florida

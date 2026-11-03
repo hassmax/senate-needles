@@ -82,6 +82,18 @@ a { color: inherit; }
 .summary .rep { color: var(--rep); }
 .summary .muted { color: var(--muted); }
 
+.clues { padding: 10px 20px 12px; border-bottom: 1px solid var(--line); }
+.clues-head { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.clues-head b { color: var(--ink); }
+.clues-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.clue { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; cursor: help; }
+.clue-name { font-weight: 700; font-size: 13px; }
+.clue-name span { font-weight: 400; color: var(--muted); }
+.clue-now { margin-top: 2px; font-variant-numeric: tabular-nums; }
+.clue-now b { font-size: 14px; }
+.clue-vs { color: var(--muted); margin-top: 1px; }
+@media (max-width: 980px) { .clues { padding: 10px 16px 12px; } }
+
 .layout {
   display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 20px;
   max-width: 1500px; margin: 0 auto;

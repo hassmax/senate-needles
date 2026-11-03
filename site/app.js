@@ -41,7 +41,12 @@ const svgEl = (tag, attrs = {}) => {
 const partyVar = (party) => (party === "D" ? "dem" : party === "R" ? "rep" : "ind");
 const pct = (x, d = 0) => (x * 100).toFixed(d);
 const fmtTime = (iso) => (iso ? ET.format(new Date(iso)) : "");
-const stateName = (id) => ((S.config && S.config.races.find((r) => r.id === id)) || { state: id }).state;
+const stateName = (id) => {
+  const r = S.config && S.config.races.find((x) => x.id === id);
+  if (r) return r.state;
+  const b = S.config && S.config.bellwethers && S.config.bellwethers.list.find((x) => x.id === id);
+  return b ? b.id : id;
+};
 
 async function getJSON(url) {
   const res = await fetch(url, { cache: "no-store" });
@@ -118,7 +123,7 @@ function setArm(card, p) {
 // ---------- per-race estimate ----------
 // All needles at once, since each race's starting point depends on the other states' counts.
 function computeAll() {
-  S.N = needles(S.config.races, S.baselines, (S.live && S.live.races) || {}, (S.live && S.live.analyst) || {}, S.config, Date.now());
+  S.N = needles(S.config.races, S.baselines, (S.live && S.live.races) || {}, (S.live && S.live.analyst) || {}, S.config, Date.now(), (S.live && S.live.clues) || {});
 }
 function raceView(race) {
   const lr = (S.live && S.live.races && S.live.races[race.id]) || {};
@@ -262,6 +267,7 @@ function updateCard(race, card) {
 
   // Notes
   const notes = [];
+  if (race.watch) notes.push(race.watch);
   if (race.count_note) notes.push(race.count_note);
   if (race.no_live_count) notes.push(race.no_live_count);
   if (race.baseline_note) notes.push(race.baseline_note);
@@ -491,8 +497,45 @@ async function refresh() {
   renderStatus();
 }
 
+// ---------- early clues (House bellwethers) ----------
+function renderClues() {
+  const box = document.getElementById("clues");
+  const bws = (S.config.bellwethers && S.config.bellwethers.list) || [];
+  if (!bws.length) { box.hidden = true; return; }
+  box.hidden = false;
+  box.replaceChildren(el("div", { class: "clues-head" }, el("b", { text: "Early clues" }),
+    el("span", { text: ` · House races that report early, from Axios's list by Hans Nichols. They move every needle below.` })));
+  const row = el("div", { class: "clues-row" });
+  const ev = (S.N && S.N.evidence) || {};
+  for (const bw of bws) {
+    const c = S.live && S.live.clues && S.live.clues[bw.id];
+    const e = ev[bw.id];
+    const exp = bw.expected >= 0 ? `${bw.left.last} +${bw.expected.toFixed(1)}` : `${bw.right.last} +${(-bw.expected).toFixed(1)}`;
+    const chip = el("div", { class: "clue", title: `${bw.watch} Expected ${exp}: ${bw.basis}.` });
+    chip.append(el("div", { class: "clue-name", text: `${bw.id} ` }, el("span", { text: `${bw.left.last} (D) v. ${bw.right.last} (R)` })));
+    if (c && c.ok) {
+      const tot = c.left + c.right + c.other, m = (c.left - c.right) / tot * 100;
+      const f = c.precincts && c.precincts[1] ? c.precincts[0] / c.precincts[1] : null;
+      chip.append(el("div", { class: "clue-now" },
+        el("b", { style: `color:var(--${m >= 0 ? "dem" : "rep"})`, text: `${m >= 0 ? bw.left.last : bw.right.last} +${Math.abs(m).toFixed(1)}` }),
+        f != null ? ` · ${Math.round(f * 100)}% of ${c.unitsAre || "precincts"} in` : ""));
+      const diff = m - bw.expected;
+      chip.append(el("div", { class: "clue-vs", text: e
+        ? `${Math.abs(diff).toFixed(1)} pts ${diff >= 0 ? "better for Democrats" : "better for Republicans"} than expected (${exp})`
+        : `Too early to read · expected ${exp}` }));
+    } else {
+      const closed = Date.now() >= Date.parse(bw.polls_close);
+      chip.append(el("div", { class: "clue-now", text: closed ? "Polls closed · waiting for votes" : `Polls close ${fmtTime(bw.polls_close)} ET` }));
+      chip.append(el("div", { class: "clue-vs", text: `Expected ${exp}` }));
+    }
+    row.append(chip);
+  }
+  box.append(row);
+}
+
 function renderAll() {
   computeAll();
+  renderClues();
   for (const race of S.config.races) updateCard(race, S.cards[race.id]);
   renderSummary();
   renderFeed();

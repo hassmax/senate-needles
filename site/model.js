@@ -243,6 +243,22 @@ export function evidenceOf(est, prior) {
   return { d: est.sObs - est.s0, v: (sd0 * sd0 * (1 - est.lam) / est.lam) * EVIDENCE_INFLATE ** 2, sd0 };
 }
 
+// Evidence from an early-clue House district (config "bellwethers"): its count so far against
+// the result expected before the night (bw.expected, points, left minus right). A district has
+// more local noise than a statewide race (bw.local_sd), and early partial counts can be far off,
+// so it only counts once a few precincts are in and for more as the rest come in.
+export function bellwetherEvidence(bw, counts, localSd = 7) {
+  if (!counts || !counts.ok) return null;
+  const tot = counts.left + counts.right + counts.other;
+  const f = counts.precincts && counts.precincts[1] ? counts.precincts[0] / counts.precincts[1] : 0;
+  if (tot < 500 || f < 0.05) return null;
+  const m = (counts.left - counts.right) / tot;
+  const tau2 = NATIONAL_SHARE * 0.055 * 0.055;
+  const local = (bw.local_sd || localSd) / 100;
+  const partial = 0.12 * (1 - Math.min(1, f));
+  return { d: m - bw.expected / 100, v: partial * partial + 0.0001, sd0: Math.sqrt(tau2 + local * local), f, m };
+}
+
 // National shift from the given evidence (excluding `skip`): {shift, var} as margin fractions.
 export function nationalShift(evidence, skip = null, refSd = 0.055) {
   const tau2 = NATIONAL_SHARE * refSd * refSd;
@@ -292,8 +308,12 @@ export function needle(race, baseline, live, analyst, cfg, now, nat = null) {
 // All races at once: first each counted state's own evidence (from its own starting point), then
 // every race's needle with its starting point moved by what the other states' counts show.
 // liveRaces = {id: {counts, markets}}, analyst = {id: {p_left, time}}.
-export function needles(races, baselines, liveRaces, analyst, cfg, now) {
+export function needles(races, baselines, liveRaces, analyst, cfg, now, clues = {}) {
   const evidence = {};
+  for (const bw of (cfg.bellwethers && cfg.bellwethers.list) || []) {
+    const e = bellwetherEvidence(bw, clues && clues[bw.id], cfg.bellwethers.local_sd);
+    if (e) evidence[bw.id] = e;
+  }
   for (const r of races) {
     const lr = (liveRaces && liveRaces[r.id]) || {};
     const counts = lr.counts && lr.counts.ok ? lr.counts : null;

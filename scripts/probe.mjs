@@ -6,12 +6,10 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://results.elections.virginia.gov/",
-    "https://enr.elections.virginia.gov/",
-    "https://www.elections.virginia.gov/resultsreports/election-results/",
-    "https://results.elections.virginia.gov/vaelections/2026%20November%20General/Site/Congress.html",
-    "https://results.elections.virginia.gov/vaelections/2024%20November%20General/Site/Congress.html",
-    "https://results.elections.virginia.gov/vaelections/2024%20November%20General/Json/Members_Of_Congress.json",
+    "https://enr.elections.virginia.gov/results/public/virginia/elections/2026-November-General",
+    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General",
+    "https://enr.elections.virginia.gov/results/public/api/elections/Virginia/2026-November-General",
+    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-August-Democratic-Primary",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -87,7 +85,7 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["json", "Json", "JSON", "api/", "Congress", "Member", "District 0", "2026"]) {
+    for (const k of ["api/", "Congress", "Representative", "ballotItems", "ballot-items", "voteCount"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }
@@ -155,7 +153,9 @@ function summarizeJson(url, j, console) {
     }
     return;
   }
-  console.log("json:", short(JSON.stringify(j), 1500));
+  const keys = (x) => x && typeof x === "object" ? Object.keys(x).slice(0, 30).join(",") : typeof x;
+  console.log("json keys:", keys(j), Array.isArray(j) ? `array ${j.length} first keys ${keys(j[0])}` : "");
+  console.log("json:", short(JSON.stringify(j), 3500));
 }
 
 // Fetch in parallel, print in order (each probe's output is buffered).

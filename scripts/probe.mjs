@@ -6,10 +6,9 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://enr.elections.virginia.gov/results/public/virginia/elections/2026-November-General",
-    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General",
-    "https://enr.elections.virginia.gov/results/public/api/elections/Virginia/2026-November-General",
-    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-August-Democratic-Primary",
+    "https://enr.elections.virginia.gov/results/public/main-SDUQU7SI.js",
+    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General/ballot-items",
+    "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-August-Democratic-Primary/ballot-items",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -85,11 +84,16 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["api/", "Congress", "Representative", "ballotItems", "ballot-items", "voteCount"]) {
+    for (const k of ["ballot-items", "/reports", "blobName", "api/elections", "Representative", "voteCount", "ballotOptions"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }
     console.log(`cors ${res.headers.get("access-control-allow-origin")} cache ${res.headers.get("cache-control")} last-mod ${res.headers.get("last-modified")}`);
+    if (/javascript/.test(type) || url.endsWith(".js")) {
+      const paths = new Set([...text.matchAll(/["'`]([^"'`]*(?:api\/|ballot-items|reports|blob)[^"'`]*)["'`]/g)].map((m) => m[1]).filter((x) => x.length < 160));
+      console.log("js paths:", [...paths].slice(0, 80).join(" | "));
+      return;
+    }
     if (/json/.test(type) || /^[\[{]/.test(text.trim())) {
       try {
         const j = JSON.parse(text);

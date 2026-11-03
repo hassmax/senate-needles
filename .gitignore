@@ -1,0 +1,7 @@
+node_modules/
+out/
+state/
+_site/
+site/data/config.json
+site/data/live.json
+site/data/history.json

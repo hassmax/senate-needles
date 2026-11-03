@@ -1,0 +1,79 @@
+name: Update
+
+# One update: read every source, publish the page with fresh data. On election night the
+# "Election night" workflow starts these back to back (about one a minute or two). The schedule
+# below is only a backup, since GitHub often runs scheduled jobs late. Minutes are free (public repo).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+  push:
+    branches: [main]
+    paths: ["site/**", "scripts/**", "config/**", ".github/workflows/update.yml"]
+
+permissions:
+  contents: write   # save working state to the data branch
+  pages: write      # publish the site
+  id-token: write   # required by deploy-pages
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore working state from the data branch
+        run: |
+          mkdir -p state
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch -q --depth 1 origin data
+            git --work-tree=state checkout FETCH_HEAD -- . 2>/dev/null || true
+            git reset -q
+          fi
+          ls -la state
+
+      - name: Read sources
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: node scripts/fetch.mjs --state state --out out
+
+      - name: Save working state
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd state
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "State $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data:data || echo "could not save state; the next run starts from the previous save"
+
+      - name: Build the site
+        run: |
+          rm -rf _site && cp -r site _site
+          mkdir -p _site/data
+          cp config/races.json _site/data/config.json
+          cp out/live.json out/history.json _site/data/
+          sed -i "s/__BUILD__/${GITHUB_SHA}/g" _site/index.html _site/app.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

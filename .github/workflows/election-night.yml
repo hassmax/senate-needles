@@ -1,0 +1,55 @@
+name: Election night
+
+# Keeps updates running back to back: whenever no update is running or queued, it starts one.
+# A job can run at most 6 hours, so before then it starts its own next run. The schedule is a
+# backup that restarts the chain if it breaks. To stop for good, disable this workflow
+# (Actions tab, "Election night", the "..." menu, Disable workflow).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17,47 * * * *"
+
+permissions:
+  actions: write   # start updates and the next run of this workflow
+
+concurrency:
+  group: election-night
+  cancel-in-progress: false
+
+jobs:
+  drive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Start updates back to back
+        run: |
+          end=$((SECONDS + 340 * 60))
+          while [ "$SECONDS" -lt "$end" ]; do
+            busy=0
+            for s in queued in_progress waiting pending requested; do
+              n=$(gh api "repos/$REPO/actions/workflows/update.yml/runs?status=$s&per_page=5" --jq '.total_count' 2>/dev/null || echo 0)
+              busy=$((busy + n))
+            done
+            # A run stuck "waiting" at the github-pages check blocks the queue; cancel any over 8 minutes old.
+            gh api "repos/$REPO/actions/workflows/update.yml/runs?status=waiting&per_page=10" \
+              --jq '.workflow_runs[] | "\(.id) \(.created_at)"' 2>/dev/null | while read -r id created; do
+              if [ $(( $(date +%s) - $(date -d "$created" +%s) )) -ge 480 ]; then
+                echo "$(date -u +%H:%M:%S) cancelling run $id, waiting since $created"
+                gh api -X POST "repos/$REPO/actions/runs/$id/cancel" >/dev/null || true
+              fi
+            done
+            if [ "$busy" -eq 0 ]; then
+              echo "$(date -u +%H:%M:%S) starting an update"
+              gh workflow run update.yml --repo "$REPO" --ref main || echo "could not start an update"
+              sleep 25
+            else
+              sleep 10
+            fi
+          done
+
+      - name: Start the next run
+        if: success() || failure()
+        run: gh workflow run election-night.yml --repo "$REPO" --ref main

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Senate Needles</title>
+  <meta name="description" content="Live election-night estimates for the closest 2026 Senate races, from official counts, prediction markets and the news.">
+  <meta name="build" content="__BUILD__">
+  <link rel="stylesheet" href="styles.css?v=__BUILD__">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Senate needles</h1>
+      <p class="byline">Election night, Nov. 3, 2026 · By Huzaifa Khan</p>
+    </div>
+    <div class="status" id="status" aria-live="polite">Loading…</div>
+    <div class="tools">
+      <button type="button" id="jitter" aria-pressed="true" title="The needle wiggles within its likely range, like the uncertainty it shows">Jitter on</button>
+    </div>
+  </header>
+
+  <section class="summary" id="summary" aria-label="Overview"></section>
+
+  <main class="layout">
+    <section class="races" id="races" aria-label="Races"></section>
+    <aside class="feed" aria-label="Live feed">
+      <div class="feed-head">
+        <h2>Live feed</h2>
+        <div class="chips" id="feed-filter" role="toolbar" aria-label="Filter the feed by race"></div>
+      </div>
+      <ol class="feed-list" id="feed"></ol>
+    </aside>
+  </main>
+
+  <footer class="about">
+    <h2>How the needles work</h2>
+    <p>Each needle shows one estimate: the chance the candidate on that side wins. It is this site's own rough model, not a professional forecast.</p>
+    <ul>
+      <li><b>Before votes are counted</b> the needle sits on the final polling average for that race, allowing about 5 to 6 points of polling error.</li>
+      <li><b>As counties report</b>, each county's count is compared with how it voted for president in 2024. The average shift in counties that are mostly counted is applied to the votes still to come everywhere. Partly counted counties count for less, because early and mail ballots, which often lean one way, are usually counted first.</li>
+      <li><b>The range</b> under each needle is the middle 80% of likely final margins. It narrows as the share of the expected vote still out shrinks.</li>
+      <li><b>Market ticks</b> (K for Kalshi, P for Polymarket) are betting prices, shown separately. They are not part of the estimate. The hollow tick is the pre-election polling average.</li>
+      <li><b>Race calls</b> appear only when a news organization's own post says so, with a link. The needle keeps showing the model.</li>
+      <li>Counts come from each state's official election-night results. Maine posts no live count, so its needle shows market odds and is labelled that way. Alaska counts absentee ballots for two weeks and uses ranked choice, so its range stays wide.</li>
+    </ul>
+    <p class="fine">Posts and headlines are shown as short excerpts with links to the original. Sources: state election offices, Kalshi, Polymarket, Bluesky, Google News; 2024 county results compiled by T. McGovern from official returns. <a href="https://github.com/hassmax/senate-needles">Source code</a>.</p>
+  </footer>
+
+  <div class="fatal" id="fatal" hidden></div>
+  <script type="module" src="app.js?v=__BUILD__"></script>
+</body>
+</html>

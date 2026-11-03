@@ -1,0 +1,120 @@
+{
+  "_note": "Edit this file on GitHub to change a race: priors, candidates, feeds, or a hand call (set \"call\": {\"winner\": \"left\" or \"right\", \"by\": \"AP\", \"url\": \"...\"}). Margins are left candidate minus right candidate, in points. The next update picks up changes.",
+  "election_date": "2026-11-03",
+  "turnout_default": 0.75,
+  "races": [
+    {
+      "id": "OH", "state": "Ohio", "title": "Ohio (special)", "special": true,
+      "left": { "name": "Sherrod Brown", "last": "Brown", "party": "D" },
+      "right": { "name": "Jon Husted", "last": "Husted", "party": "R", "incumbent": true },
+      "prior": { "margin": 2.8, "sd": 5.5, "source": "Polling average, final week", "as_of": "2026-11-01" },
+      "polls_close": "2026-11-04T00:30:00Z", "polls_close_all": "2026-11-04T00:30:00Z",
+      "turnout": 0.75, "late_share": 0.04,
+      "results_page": "https://liveresults.ohiosos.gov/",
+      "news_query": "Ohio Senate Brown Husted",
+      "bsky_queries": ["Ohio Senate", "Sherrod Brown Husted"]
+    },
+    {
+      "id": "FL", "state": "Florida", "title": "Florida (special)", "special": true,
+      "left": { "name": "Angie Nixon", "last": "Nixon", "party": "D" },
+      "right": { "name": "Ashley Moody", "last": "Moody", "party": "R", "incumbent": true },
+      "prior": { "margin": -6.2, "sd": 5.5, "source": "Polling average, late October", "as_of": "2026-10-31" },
+      "polls_close": "2026-11-04T00:00:00Z", "polls_close_all": "2026-11-04T01:00:00Z",
+      "turnout": 0.72, "late_share": 0.01,
+      "results_page": "https://results.elections.myflorida.com/",
+      "news_query": "Florida Senate Moody Nixon",
+      "bsky_queries": ["Florida Senate Moody", "Angie Nixon"]
+    },
+    {
+      "id": "SC", "state": "South Carolina", "title": "South Carolina",
+      "left": { "name": "Annie Andrews", "last": "Andrews", "party": "D" },
+      "right": { "name": "Darline Graham", "last": "Graham", "party": "R", "incumbent": true },
+      "prior": { "margin": 0.0, "sd": 6.0, "source": "NYT/Siena poll, late October (tied)", "as_of": "2026-10-30" },
+      "polls_close": "2026-11-04T00:00:00Z", "polls_close_all": "2026-11-04T00:00:00Z",
+      "turnout": 0.72, "late_share": 0.02,
+      "results_page": "https://www.scvotes.gov/election-results",
+      "news_query": "South Carolina Senate Graham Andrews",
+      "bsky_queries": ["South Carolina Senate", "Annie Andrews"]
+    },
+    {
+      "id": "TX", "state": "Texas", "title": "Texas",
+      "left": { "name": "James Talarico", "last": "Talarico", "party": "D" },
+      "right": { "name": "Ken Paxton", "last": "Paxton", "party": "R" },
+      "prior": { "margin": 2.6, "sd": 5.5, "source": "Polling average", "as_of": "2026-10-27" },
+      "polls_close": "2026-11-04T01:00:00Z", "polls_close_all": "2026-11-04T02:00:00Z",
+      "turnout": 0.72, "late_share": 0.02,
+      "results_page": "https://results.texas-election.com/",
+      "news_query": "Texas Senate Talarico Paxton",
+      "bsky_queries": ["Texas Senate", "Talarico Paxton"]
+    },
+    {
+      "id": "MI", "state": "Michigan", "title": "Michigan",
+      "left": { "name": "Abdul El-Sayed", "last": "El-Sayed", "party": "D" },
+      "right": { "name": "Mike Rogers", "last": "Rogers", "party": "R" },
+      "prior": { "margin": 6.0, "sd": 5.5, "source": "Late October polls (Glengariff, Mitchell)", "as_of": "2026-10-27" },
+      "polls_close": "2026-11-04T01:00:00Z", "polls_close_all": "2026-11-04T02:00:00Z",
+      "turnout": 0.8, "late_share": 0.02,
+      "results_page": "https://mielections.us/election/results/",
+      "news_query": "Michigan Senate El-Sayed Rogers",
+      "bsky_queries": ["Michigan Senate", "El-Sayed Rogers"]
+    },
+    {
+      "id": "ME", "state": "Maine", "title": "Maine", "rcv": true,
+      "left": { "name": "Troy Jackson", "last": "Jackson", "party": "D" },
+      "right": { "name": "Susan Collins", "last": "Collins", "party": "R", "incumbent": true },
+      "prior": { "margin": 5.1, "sd": 5.5, "source": "Polling average, final week", "as_of": "2026-11-01" },
+      "polls_close": "2026-11-04T01:00:00Z", "polls_close_all": "2026-11-04T01:00:00Z",
+      "turnout": 0.82, "late_share": 0.02,
+      "no_live_count": "Maine's Secretary of State doesn't post a live count on election night (towns report to news organizations). This needle shows market odds instead.",
+      "results_page": "https://www.maine.gov/sos/cec/elec/results/index.html",
+      "news_query": "Maine Senate Collins Jackson",
+      "bsky_queries": ["Maine Senate", "Collins Troy Jackson"]
+    },
+    {
+      "id": "KS", "state": "Kansas", "title": "Kansas",
+      "left": { "name": "Adam Hamilton", "last": "Hamilton", "party": "D" },
+      "right": { "name": "Roger Marshall", "last": "Marshall", "party": "R", "incumbent": true },
+      "prior": { "margin": 0.9, "sd": 5.5, "source": "Polling average", "as_of": "2026-10-27" },
+      "polls_close": "2026-11-04T01:00:00Z", "polls_close_all": "2026-11-04T02:00:00Z",
+      "turnout": 0.74, "late_share": 0.03,
+      "results_page": "https://sos.ks.gov/elections/elections-results.html",
+      "news_query": "Kansas Senate Marshall Hamilton",
+      "bsky_queries": ["Kansas Senate", "Adam Hamilton Marshall"]
+    },
+    {
+      "id": "IA", "state": "Iowa", "title": "Iowa",
+      "left": { "name": "Josh Turek", "last": "Turek", "party": "D" },
+      "right": { "name": "Ashley Hinson", "last": "Hinson", "party": "R" },
+      "prior": { "margin": 0.0, "sd": 6.5, "source": "Thin public polling; treated as even", "as_of": "2026-11-01" },
+      "polls_close": "2026-11-04T02:00:00Z", "polls_close_all": "2026-11-04T02:00:00Z",
+      "turnout": 0.74, "late_share": 0.02,
+      "results_page": "https://electionresults.iowa.gov/",
+      "news_query": "Iowa Senate Hinson Turek",
+      "bsky_queries": ["Iowa Senate", "Hinson Turek"]
+    },
+    {
+      "id": "NE", "state": "Nebraska", "title": "Nebraska",
+      "left": { "name": "Dan Osborn", "last": "Osborn", "party": "I" },
+      "right": { "name": "Pete Ricketts", "last": "Ricketts", "party": "R", "incumbent": true },
+      "prior": { "margin": 0.6, "sd": 6.5, "source": "Polling average (mostly partisan-sponsored polls)", "as_of": "2026-10-27" },
+      "polls_close": "2026-11-04T02:00:00Z", "polls_close_all": "2026-11-04T03:00:00Z",
+      "turnout": 0.74, "late_share": 0.02,
+      "baseline_note": "Osborn is an independent; Harris's 2024 vote is used as his starting point.",
+      "results_page": "https://electionresults.nebraska.gov/",
+      "news_query": "Nebraska Senate Osborn Ricketts",
+      "bsky_queries": ["Nebraska Senate", "Osborn Ricketts"]
+    },
+    {
+      "id": "AK", "state": "Alaska", "title": "Alaska", "rcv": true,
+      "left": { "name": "Mary Peltola", "last": "Peltola", "party": "D" },
+      "right": { "name": "Dan Sullivan", "last": "Sullivan", "party": "R", "incumbent": true },
+      "prior": { "margin": 3.1, "sd": 6.0, "source": "Polling average (first choices)", "as_of": "2026-10-27" },
+      "polls_close": "2026-11-04T05:00:00Z", "polls_close_all": "2026-11-04T06:00:00Z",
+      "turnout": 0.75, "late_share": 0.3,
+      "count_note": "Alaska counts absentee ballots for two weeks and runs ranked-choice rounds on Nov. 18 if no one passes 50%.",
+      "results_page": "https://www.elections.alaska.gov/election-results/",
+      "news_query": "Alaska Senate Peltola Sullivan",
+      "bsky_queries": ["Alaska Senate", "Peltola Sullivan"]
+    }
+  ]
+}

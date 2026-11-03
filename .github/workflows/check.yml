@@ -1,0 +1,26 @@
+name: Check sources
+
+# Reads every candidate source once and prints what came back. Nothing is published.
+on:
+  workflow_dispatch:
+    inputs:
+      groups:
+        description: "Which groups (states, markets, social); empty for all"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/probe.mjs ${{ inputs.groups }}
+      - name: Dry run of one update
+        run: node scripts/fetch.mjs --state /tmp/state --out /tmp/out && head -c 3000 /tmp/out/live.json

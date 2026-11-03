@@ -1,0 +1,7 @@
+{
+  "name": "senate-needles",
+  "private": true,
+  "type": "module",
+  "description": "Live election-night needles for the closest 2026 Senate races",
+  "scripts": { "test": "node --test tests/*.test.mjs" }
+}

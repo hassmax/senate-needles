@@ -6,11 +6,12 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://www.elections.alaska.gov/enr/26GENR/results/GA_ENR_Precinct_State_of_Alaska.csv",
-    "https://results.elections.myflorida.com/downloadresults.asp?ElectionDate=11/5/2024&DATAMODE=",
-    "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/5/2024&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download",
-    "https://liveresults.ohiosos.gov/",
-    "https://electionresults.nebraska.gov/resultsSW.aspx?type=SW&map=CTY",
+    "https://results.elections.virginia.gov/",
+    "https://enr.elections.virginia.gov/",
+    "https://www.elections.virginia.gov/resultsreports/election-results/",
+    "https://results.elections.virginia.gov/vaelections/2026%20November%20General/Site/Congress.html",
+    "https://results.elections.virginia.gov/vaelections/2024%20November%20General/Site/Congress.html",
+    "https://results.elections.virginia.gov/vaelections/2024%20November%20General/Json/Members_Of_Congress.json",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -86,7 +87,7 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["<form", "<FORM", "Extract", "resultsCSV", "13224", "U.S. Senat", "United States Senat"]) {
+    for (const k of ["json", "Json", "JSON", "api/", "Congress", "Member", "District 0", "2026"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }

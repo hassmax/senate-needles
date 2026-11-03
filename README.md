@@ -49,6 +49,10 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   from its website, whose terms forbid scraping.
 - **Race calls** appear only when the AP's or Decision Desk HQ's own post says so, or when you set
   one by hand (below).
+- **Candidate photos**: freely licensed photos from Wikimedia Commons (public domain or Creative
+  Commons), credited at the bottom of the page. To refresh them: Actions → "Candidate photos" →
+  Run workflow with "commit" ticked (`scripts/fetch_photos.mjs`). A wrong match can be fixed by
+  naming the candidate's Wikipedia article with `"wiki"` in `config/races.json`.
 - **Live feed**: posts from news organizations and analysts on Bluesky, Bluesky keyword searches
   (well-followed accounts only, marked "search"), and Google News headlines. Each item is a short
   excerpt with a link.

@@ -131,6 +131,15 @@ function raceView(race) {
 }
 
 // ---------- cards ----------
+// Candidate photos (Wikimedia Commons, free licences; scripts/fetch_photos.mjs), if any.
+const photoOf = (race, side) => (S.photos && S.photos[`${race.id}-${side}`]) || null;
+function renderPhotoCredits() {
+  const box = document.getElementById("photo-credits");
+  const list = Object.values(S.photos || {});
+  if (!box || !list.length) return;
+  box.replaceChildren("Candidate photos from Wikimedia Commons: ",
+    ...list.flatMap((p, i) => [i ? "; " : "", el("a", { href: p.source, target: "_blank", rel: "noopener", text: p.name }), ` (${p.author}, ${p.license})`]), ".");
+}
 function buildCard(race) {
   const needle = buildNeedle(race);
   const card = {
@@ -152,7 +161,16 @@ function buildCard(race) {
     p: 0.5, band: [0.5, 0.5],
   };
   card.head.append(el("h3", { text: race.title }), card.status);
-  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.trend, card.note, card.sources);
+  card.matchup = el("div", { class: "matchup" });
+  for (const side of ["left", "right"]) {
+    const c = race[side], ph = photoOf(race, side);
+    card.matchup.append(el("div", { class: `cand ${side}` },
+      ph ? el("img", { class: "cand-photo", src: `assets/candidates/${ph.file}?v=${BUILD}`, alt: "", loading: "lazy", width: "40", height: "40",
+        style: `border-color:var(--${partyVar(c.party)})`, title: `Photo: ${ph.author}, ${ph.license}, via Wikimedia Commons` })
+        : el("span", { class: "cand-photo blank", style: `border-color:var(--${partyVar(c.party)})`, "aria-hidden": "true" }),
+      el("span", { class: "cand-name" }, el("b", { text: c.name }), el("span", { text: ` (${c.party})` }))));
+  }
+  card.root.append(card.head, card.matchup, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.trend, card.note, card.sources);
   return card;
 }
 
@@ -580,6 +598,8 @@ function renderAll() {
 
 async function boot() {
   S.config = await getJSON(`data/config.json?t=${Date.now()}`);
+  try { S.photos = await getJSON(`assets/candidates/credits.json?v=${BUILD}`); } catch { S.photos = {}; }
+  renderPhotoCredits();
   await Promise.all(S.config.races.map(async (r) => { S.baselines[r.id] = await getJSON(`data/baseline/${r.id}.json?v=${BUILD}`); }));
   const box = document.getElementById("races");
   for (const race of S.config.races) {

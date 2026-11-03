@@ -21,6 +21,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Alaska's missing intermediate certificate
+        run: |
+          curl -sSf -o /tmp/ak.crt http://secure.globalsign.com/cacert/gsgccr46ovtlsca2025.crt
+          openssl x509 -inform der -in /tmp/ak.crt -out /tmp/ak.pem
+          echo "NODE_EXTRA_CA_CERTS=/tmp/ak.pem" >> "$GITHUB_ENV"
       - run: node scripts/probe.mjs ${{ inputs.groups }}
       - name: Alaska certificate chain
         continue-on-error: true

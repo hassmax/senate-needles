@@ -6,12 +6,11 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://elect.ky.gov/results/Pages/default.aspx",
-    "https://elect.ky.gov/Resources/Pages/Election-Results.aspx",
-    "https://results.enr.clarityelections.com/KY/",
-    "https://enr.indianavoters.in.gov/",
-    "https://enr.indianavoters.in.gov/site/index.html",
-    "https://indianavoters.in.gov/ENR/",
+    "https://enr.indianavoters.in.gov/site/Scripts/EnrAngular/Services/jsonDataFetcher.js",
+    "https://enr.indianavoters.in.gov/site/Scripts/EnrAngular/Directives/enrDownloadResults.js",
+    "https://enr.indianavoters.in.gov/site/Scripts/EnrAngular/Initialization/initApp.js",
+    "https://vrsws.sos.ky.gov/liveresults/",
+    "https://elect.ky.gov/results/2020-2029/Pages/2026.aspx",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -87,13 +86,14 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["clarity", "enr", "json", "2026", "General", "results"]) {
+    for (const k of ["liveresults", "json", "clarity", "2026 General", "General Election", "Live"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }
     console.log(`cors ${res.headers.get("access-control-allow-origin")} cache ${res.headers.get("cache-control")} last-mod ${res.headers.get("last-modified")}`);
     if (/javascript/.test(type) || url.endsWith(".js")) {
-      const paths = new Set([...text.matchAll(/["'`]([^"'`]*(?:api\/|ballot-items|reports|blob)[^"'`]*)["'`]/g)].map((m) => m[1]).filter((x) => x.length < 160));
+      const paths = new Set([...text.matchAll(/["'`]([^"'`]*(?:api\/|ballot-items|reports|blob|\.json|\.xml|Data\/|data\/|json)[^"'`]*)["'`]/gi)].map((m) => m[1]).filter((x) => x.length < 200));
+      if (text.length < 40000) console.log("js text:", short(text, 3500));
       console.log("js paths:", [...paths].slice(0, 80).join(" | "));
       return;
     }

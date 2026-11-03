@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       groups:
-        description: "Which groups (states, markets, social); empty for all"
+        description: "Which groups (states, markets, social, extra); empty for all"
         required: false
         default: ""
 
@@ -13,14 +13,23 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: node scripts/probe.mjs ${{ inputs.groups }}
-      - name: Dry run of one update
-        run: node scripts/fetch.mjs --state /tmp/state --out /tmp/out && head -c 3000 /tmp/out/live.json
+
+  dry-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: One update, not published
+        run: node scripts/fetch.mjs --state /tmp/state --out /tmp/out && node -e "const j=require('/tmp/out/live.json'); for (const [k,v] of Object.entries(j.races)) console.log(k, JSON.stringify({counts: v.counts && {ok: v.counts.ok, error: v.counts.error, votes: v.counts.votes}, markets: v.markets, call: v.call})); console.log('control', JSON.stringify(j.control)); console.log('feed', j.feed.length); for (const f of j.feed.slice(0,15)) console.log(' ', f.kind, f.via||'', f.race, f.time, f.author||f.outlet, '|', f.text.slice(0,100))"

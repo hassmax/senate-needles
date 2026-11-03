@@ -64,7 +64,8 @@ function short(s, n = 500) {
   return s.replace(/\s+/g, " ").slice(0, n);
 }
 
-async function probe(url) {
+async function probe(url, out = console.log) {
+  const console = { log: out };
   const t0 = Date.now();
   try {
     const res = await fetch(url, {
@@ -81,7 +82,7 @@ async function probe(url) {
     if (/json/.test(type) || /^[\[{]/.test(text.trim())) {
       try {
         const j = JSON.parse(text);
-        summarizeJson(url, j);
+        summarizeJson(url, j, console);
       } catch {
         console.log("head:", short(text, 800));
       }
@@ -100,7 +101,7 @@ async function probe(url) {
   }
 }
 
-function summarizeJson(url, j) {
+function summarizeJson(url, j, console) {
   if (url.includes("kalshi")) {
     const ev = j.event || {};
     console.log("kalshi event:", ev.event_ticker, "|", ev.title, "|", ev.sub_title);
@@ -133,9 +134,17 @@ function summarizeJson(url, j) {
   console.log("json:", short(JSON.stringify(j), 1500));
 }
 
+// Fetch in parallel, print in order (each probe's output is buffered).
 const want = process.argv.slice(2);
+const realLog = console.log;
 for (const [name, urls] of Object.entries(groups)) {
   if (want.length && !want.includes(name)) continue;
-  console.log(`\n##### ${name}`);
-  for (const u of urls) await probe(u);
+  realLog(`\n##### ${name}`);
+  const outs = await Promise.all(urls.map(async (u) => {
+    const lines = [];
+    const run = probe(u, (...a) => lines.push(a.join(" ")));
+    await run;
+    return lines.join("\n");
+  }));
+  for (const o of outs) realLog(o);
 }

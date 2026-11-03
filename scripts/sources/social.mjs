@@ -43,7 +43,7 @@ export function detectCall(races, post, now = Date.now()) {
   const won = (c) => new RegExp(`\\b${c.last}\\b[^.]{0,60}\\b(wins|won|win|is re-?elected|re-?elected|defeats|defeated|holds|flips|projected to win|will win|keeps)\\b`, "i").test(t);
   const l = won(race.left), r = won(race.right);
   if (l === r) return null;
-  if (!/\b(AP|Associated Press|race call|projects|projected|Decision Desk|DDHQ|BREAKING|calls?)\b/i.test(t)) return null;
+  if (!/\b(AP|Associated Press|race call|projects|projected|Decision Desk|DDHQ|BREAKING|calls?|seen enough)\b/i.test(t)) return null;
   return { race: race.id, winner: l ? "left" : "right" };
 }
 

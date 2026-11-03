@@ -193,3 +193,11 @@ test("Kentucky's Senate clue can come from a Decision Desk HQ update", async () 
   const e = bellwetherEvidence(bw, ddhqClue({ ...u, time: "2026-11-03T23:30:00Z", url: "x" }), 7);
   assert.ok(e && Math.abs(e.f - 0.4) < 1e-9 && e.d > 0); // Barr +11 vs. expected +18: better for Democrats
 });
+
+test("Dave Wasserman's \"I've seen enough\" posts are race calls", async () => {
+  const { detectCall } = await import("../scripts/sources/social.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const c = detectCall(cfg.races, { text: "I've seen enough: Sherrod Brown (D) defeats Jon Husted (R) in the Ohio Senate special election.", time: "2026-11-04T02:00:00Z" }, Date.parse("2026-11-04T02:01:00Z"));
+  assert.deepEqual(c, { race: "OH", winner: "left" });
+  assert.equal(detectCall(cfg.races, { text: "Not ready to say I've seen enough in Ohio Senate yet: Brown could still win.", time: "2026-11-04T02:00:00Z" }, Date.parse("2026-11-04T02:01:00Z")), null);
+});

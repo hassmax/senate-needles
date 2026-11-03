@@ -47,7 +47,11 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   the needle shows the market average, labelled "market odds".
 - **Decision Desk HQ** is read only from its Bluesky account (`scripts/sources/ddhq.mjs`), never
   from its website, whose terms forbid scraping.
-- **Race calls** appear only when the AP's or Decision Desk HQ's own post says so, or when you set
+- **Dave Wasserman** (Cook Political Report) is read from his Bluesky posts every update: his
+  "I've seen enough" calls appear as race calls, and any win chance he states is blended into the
+  needle like Morris's. X (Twitter) is not read: its terms forbid automated scraping and it
+  requires a login.
+- **Race calls** appear only when the AP's, Decision Desk HQ's or Dave Wasserman's own post says so, or when you set
   one by hand (below).
 - **Candidate photos**: freely licensed photos from Wikimedia Commons (public domain or Creative
   Commons), credited at the bottom of the page. To refresh them: Actions → "Candidate photos" →

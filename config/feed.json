@@ -20,6 +20,12 @@
         "calls": "DDHQ"
       },
       {
+        "handle": "wassermandave.bsky.social",
+        "name": "Dave Wasserman (Cook Political Report)",
+        "calls": "Dave Wasserman",
+        "all_election": true
+      },
+      {
         "handle": "nytimes.com",
         "name": "The New York Times"
       },
@@ -82,6 +88,11 @@
       "handle": "gelliottmorris.com",
       "name": "G. Elliott Morris",
       "about": "Strength In Numbers; FiftyPlusOne forecast"
+    },
+    {
+      "handle": "wassermandave.bsky.social",
+      "name": "Dave Wasserman",
+      "about": "Cook Political Report; \"I've seen enough\" calls"
     }
   ],
   "ddhq": {

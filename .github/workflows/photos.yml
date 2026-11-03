@@ -1,0 +1,33 @@
+name: Candidate photos
+
+# Finds freely licensed candidate photos on Wikimedia Commons (scripts/fetch_photos.mjs).
+# With "commit" ticked, saves them to site/assets/candidates/ on main.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Save the photos to the repository"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  photos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/fetch_photos.mjs
+      - name: Save to main
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/assets/candidates
+          git commit -m "Candidate photos from Wikimedia Commons" || exit 0
+          git pull --rebase origin main && git push origin HEAD:main

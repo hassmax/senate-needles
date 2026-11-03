@@ -9,7 +9,7 @@ const ETS = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hou
 const NUM = new Intl.NumberFormat("en-US");
 
 const S = {
-  config: null, baselines: {}, live: null, history: {}, filter: "all", seenFeed: null,
+  config: null, baselines: {}, live: null, history: {}, filter: "top", seenFeed: null,
   jitter: true, cards: {}, est: {}, lastOk: 0, lastGenerated: null,
 };
 
@@ -207,7 +207,8 @@ function updateCard(race, card) {
   } else if (est.mode === "market") {
     card.est.textContent = `${est.note}. Polling average was ${marginText(race, race.prior.margin / 100)}.`;
   } else {
-    card.est.textContent = `Polling average: ${marginText(race, race.prior.margin / 100)} (${race.prior.source})`;
+    card.est.textContent = `Polling average: ${marginText(race, race.prior.margin / 100)}`;
+    card.est.title = `${race.prior.source}, as of ${race.prior.as_of}`;
   }
 
   // Counted share bar
@@ -343,6 +344,7 @@ function renderSummary() {
 function feedItems() {
   const items = (S.live && S.live.feed) || [];
   if (S.filter === "all") return items;
+  if (S.filter === "top") return items.filter((i) => i.call || i.kind === "news" || i.via === "account");
   if (S.filter === "calls") return items.filter((i) => i.call);
   if (S.filter === "newsrooms") return items.filter((i) => i.kind === "post" && i.via === "account");
   if (S.filter === "headlines") return items.filter((i) => i.kind === "news");
@@ -351,7 +353,7 @@ function feedItems() {
 function renderFilter() {
   const box = document.getElementById("feed-filter");
   box.replaceChildren();
-  const opts = [["all", "All"], ["calls", "Calls"], ["newsrooms", "Newsrooms"], ["headlines", "Headlines"], ...S.config.races.map((r) => [r.id, r.id])];
+  const opts = [["top", "Top"], ["all", "All (with searches)"], ["calls", "Calls"], ["newsrooms", "Newsrooms"], ["headlines", "Headlines"], ...S.config.races.map((r) => [r.id, r.id])];
   for (const [id, label] of opts) {
     const b = el("button", { type: "button", "aria-pressed": String(S.filter === id), text: label });
     b.addEventListener("click", () => { S.filter = id; renderFilter(); renderFeed(); });

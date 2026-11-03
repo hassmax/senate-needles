@@ -59,7 +59,7 @@ for (const p of posts) {
 // Feed: newest first, one copy of each item, the last 18 hours.
 const seen = new Set();
 const feed = [...posts, ...headlines, ...((prev.feed || []).filter((i) => Date.now() - Date.parse(i.time) < 18 * 3600e3))]
-  .filter((i) => i.id && !seen.has(i.id) && seen.add(i.id))
+  .filter((i) => i.id && i.text && i.text.replace(/\S+\.\S+\/\S*/g, "").trim().length >= 20 && !seen.has(i.id) && seen.add(i.id))
   .map(({ fullText, callSource, callBy, ...i }) => i)
   .sort((a, b) => Date.parse(b.time) - Date.parse(a.time))
   .slice(0, 400);

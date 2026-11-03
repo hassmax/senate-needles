@@ -20,9 +20,15 @@
         "calls": "DDHQ"
       },
       {
-        "handle": "wassermandave.bsky.social",
+        "handle": "redistrict.bsky.social",
         "name": "Dave Wasserman (Cook Political Report)",
         "calls": "Dave Wasserman",
+        "all_election": true
+      },
+      {
+        "handle": "redistrict.bluesky.bot",
+        "name": "Dave Wasserman on X (unofficial Bluesky mirror)",
+        "calls": "Dave Wasserman (X)",
         "all_election": true
       },
       {
@@ -90,9 +96,14 @@
       "about": "Strength In Numbers; FiftyPlusOne forecast"
     },
     {
-      "handle": "wassermandave.bsky.social",
+      "handle": "redistrict.bsky.social",
       "name": "Dave Wasserman",
-      "about": "Cook Political Report; \"I've seen enough\" calls"
+      "about": "Cook Political Report"
+    },
+    {
+      "handle": "redistrict.bluesky.bot",
+      "name": "Dave Wasserman (X, via unofficial mirror)",
+      "about": "Mirror of his X posts, maintained by @manos.lol"
     }
   ],
   "ddhq": {

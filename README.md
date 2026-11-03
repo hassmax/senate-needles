@@ -47,7 +47,9 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   the needle shows the market average, labelled "market odds".
 - **Decision Desk HQ** is read only from its Bluesky account (`scripts/sources/ddhq.mjs`), never
   from its website, whose terms forbid scraping.
-- **Dave Wasserman** (Cook Political Report) is read from his Bluesky posts every update: his
+- **Dave Wasserman** (Cook Political Report) is read every update from his Bluesky account
+  (redistrict.bsky.social) and from an unofficial bot that mirrors his X posts onto Bluesky
+  (redistrict.bluesky.bot, labelled as such): his
   "I've seen enough" calls appear as race calls, and any win chance he states is blended into the
   needle like Morris's. X (Twitter) is not read: its terms forbid automated scraping and it
   requires a login.

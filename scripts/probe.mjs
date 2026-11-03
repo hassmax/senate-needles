@@ -53,8 +53,6 @@ const groups = {
       (s) => `https://gamma-api.polymarket.com/public-search?q=${encodeURIComponent(s + " Senate election")}&limit_per_type=5`),
   ],
   social: [
-    "https://public.api.bsky.app/xrpc/app.bsky.actor.searchActors?q=Dave%20Wasserman&limit=8",
-    "https://public.api.bsky.app/xrpc/app.bsky.actor.searchActors?q=Wasserman%20Cook&limit=8",
     "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=Senate%20race%20call&sort=latest&limit=3",
     "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=apnews.com&limit=2",
     "https://api.bsky.app/xrpc/app.bsky.actor.getProfiles?" + [

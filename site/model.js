@@ -204,7 +204,7 @@ export function estimate(baseline, counts, opts) {
     note: statewideOnly ? "Statewide totals only; no county detail" : "",
     p: phi(margin / sd), margin, sd, lo: margin - 1.2816 * sd, hi: margin + 1.2816 * sd,
     reported: 1 - rho, counted, expected: tot, swing: sPost, turnout: T,
-    ...totals, unmatched: unmatchedUnits,
+    lam, sObs, s0, ...totals, unmatched: unmatchedUnits,
   };
 }
 
@@ -225,17 +225,60 @@ export function lean(p) {
   return "Near certain";
 }
 
+// ---------- results elsewhere ----------
+// Polling misses run in the same direction across states: about NATIONAL_SHARE of each race's
+// polling error is shared nationally, the rest is local. So when one state's count runs ahead of
+// or behind expectations, the other states' starting points move by the shared part. Only
+// official counts are used for this (never market prices). Each state is adjusted using the
+// other states only, so its own count isn't counted twice.
+export const NATIONAL_SHARE = 0.45;  // share of polling-error variance common to all races
+const EVIDENCE_INFLATE = 1.3;         // partial counts are noisier than the model alone admits
+const SHIFT_CAP = 0.08;               // never move a race more than 8 points for this
+
+// How far a state's count is running from its starting point (d, as a margin fraction), and how
+// sure that is (v, variance). Null when there's no count to learn from yet.
+export function evidenceOf(est, prior) {
+  if (!est || !(est.mode === "model" || est.mode === "statewide") || !(est.lam > 0.02)) return null;
+  const sd0 = prior.sd / 100;
+  return { d: est.sObs - est.s0, v: (sd0 * sd0 * (1 - est.lam) / est.lam) * EVIDENCE_INFLATE ** 2, sd0 };
+}
+
+// National shift from the given evidence (excluding `skip`): {shift, var} as margin fractions.
+export function nationalShift(evidence, skip = null, refSd = 0.055) {
+  const tau2 = NATIONAL_SHARE * refSd * refSd;
+  let prec = 1 / tau2, sum = 0, used = [];
+  for (const [id, e] of Object.entries(evidence)) {
+    if (!e || id === skip) continue;
+    const local = Math.max(1e-4, e.sd0 * e.sd0 - tau2);
+    prec += 1 / (local + e.v);
+    sum += e.d / (local + e.v);
+    used.push(id);
+  }
+  const shift = clamp(sum / prec, -SHIFT_CAP, SHIFT_CAP);
+  return { shift, var: 1 / prec, tau2, used };
+}
+
+// A race's starting point after results elsewhere: moved by the national shift learned from the
+// other states, with its spread narrowed by what that shift has pinned down.
+export function adjustPrior(prior, nat) {
+  if (!nat || !nat.used.length) return prior;
+  const sd0 = prior.sd / 100;
+  const sd = Math.sqrt(Math.max(1e-4, sd0 * sd0 - nat.tau2 + nat.var));
+  return { ...prior, margin: prior.margin + nat.shift * 100, sd: sd * 100, shift: nat.shift * 100, from: prior.from };
+}
+
 // What the needle shows for a race, the same on the page and in the saved trend:
 // the count model where there's an official count; market odds where there isn't one and polls
 // have closed; the starting point before that; then any live analyst estimate blended in.
 // live = {counts, markets: {kalshi, polymarket}}, analyst = {p_left, time} or null.
-export function needle(race, baseline, live, analyst, cfg, now) {
+export function needle(race, baseline, live, analyst, cfg, now, nat = null) {
   const closed = now >= Date.parse(race.polls_close);
   const kal = live && live.markets && live.markets.kalshi, poly = live && live.markets && live.markets.polymarket;
   const mk = [marketShare(kal), marketShare(poly)].filter((x) => x != null);
   const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
   const counts = live && live.counts && live.counts.ok ? live.counts : null;
-  const prior = priorOf(race, cfg.forecast_weight ?? 0.7);
+  const base = priorOf(race, cfg.forecast_weight ?? 0.7);
+  const prior = adjustPrior(base, nat);
   let est = estimate(baseline, counts, { prior, turnout: race.turnout || cfg.turnout_default, late_share: race.late_share, rcv: race.rcv });
   const noCount = !!race.no_live_count || (closed && !counts);
   if (noCount && closed && mAvg != null) {
@@ -243,5 +286,27 @@ export function needle(race, baseline, live, analyst, cfg, now) {
   }
   const b = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
   if (b.w > 0) est = { ...est, p: b.p, analyst: { ...analyst, w: b.w } };
-  return { est, closed, kal, poly, mAvg, counts, prior };
+  return { est, closed, kal, poly, mAvg, counts, prior, base };
+}
+
+// All races at once: first each counted state's own evidence (from its own starting point), then
+// every race's needle with its starting point moved by what the other states' counts show.
+// liveRaces = {id: {counts, markets}}, analyst = {id: {p_left, time}}.
+export function needles(races, baselines, liveRaces, analyst, cfg, now) {
+  const evidence = {};
+  for (const r of races) {
+    const lr = (liveRaces && liveRaces[r.id]) || {};
+    const counts = lr.counts && lr.counts.ok ? lr.counts : null;
+    if (!counts || !baselines[r.id]) continue;
+    const base = priorOf(r, cfg.forecast_weight ?? 0.7);
+    const own = estimate(baselines[r.id], counts, { prior: base, turnout: r.turnout || cfg.turnout_default, late_share: r.late_share, rcv: r.rcv });
+    evidence[r.id] = evidenceOf(own, base);
+  }
+  const out = {};
+  for (const r of races) {
+    const nat = nationalShift(evidence, r.id);
+    const an = analyst && analyst[r.id];
+    out[r.id] = { ...needle(r, baselines[r.id], (liveRaces && liveRaces[r.id]) || {}, an, cfg, now, nat), nat };
+  }
+  return { byRace: out, national: nationalShift(evidence), evidence };
 }

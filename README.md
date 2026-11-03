@@ -14,6 +14,11 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   separately. As counties report, it compares each county's
   count with how that county voted for president in 2024 and projects the votes still out (see
   `site/model.js`). It is not a professional forecast.
+- **Results elsewhere**: polling misses are correlated across states, so about 45% of each race's
+  polling error is treated as national (`NATIONAL_SHARE` in `site/model.js`). As official counts come
+  in, each counted state's departure from its starting point moves every other race's starting
+  point by the shared part (each state is adjusted using the other states only). The overview bar
+  shows the national reading; each card says how far it moved. Market prices are never used for this.
 - **Ticks on the dial**: K (Kalshi) and P (Polymarket) betting prices, and a hollow mark for the
   polling average. They are shown beside the estimate, never mixed into it.
 - **Which states have live counts**: Ohio (the Secretary of State's NIST XML feed), Florida

@@ -92,3 +92,32 @@ test("the starting point blends the forecast with the polls", async () => {
   assert.ok(old.w < 0.13 && old.p < fresh.p);
   assert.equal(blendLive(0.6, { p_left: 0.9, time: "2026-11-04T02:00:00Z" }, now, 1).p, 0.6);
 });
+
+test("a Democratic washout in one state moves the others toward Republicans", async () => {
+  const { needles } = await import("../site/model.js");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bl = {};
+  for (const r of cfg.races) bl[r.id] = JSON.parse(fs.readFileSync(new URL(`../site/data/baseline/${r.id}.json`, import.meta.url)));
+  const before = Date.parse("2026-11-03T23:30:00Z"); // before any polls close
+  const quiet = needles(cfg.races, bl, {}, {}, cfg, before);
+  assert.equal(quiet.national.used.length, 0);
+  // Florida mostly counted, running 8 points worse for the Democrat than its starting point.
+  const fl = cfg.races.find((r) => r.id === "FL");
+  const { priorOf } = await import("../site/model.js");
+  const start = priorOf(fl, cfg.forecast_weight) .margin / 100;
+  const B = (bl.FL.d - bl.FL.r) / bl.FL.total;
+  const swing = start - B - 0.08;
+  const units = bl.FL.units.map((u) => {
+    const n = u.total * 0.72 * 0.85, m = (u.d - u.r) / u.total + swing, o = n * 0.02;
+    return { name: u.name, left: (n - o) / 2 + (m * n) / 2, right: (n - o) / 2 - (m * n) / 2, other: o, complete: false };
+  });
+  const live = { FL: { counts: { ok: true, units } } };
+  const res = needles(cfg.races, bl, live, {}, cfg, before);
+  assert.deepEqual(res.national.used, ["FL"]);
+  assert.ok(res.national.shift < -0.02, `national shift ${res.national.shift}`);
+  for (const id of ["OH", "TX", "MI", "AK"]) {
+    assert.ok(res.byRace[id].est.p < quiet.byRace[id].est.p - 0.03, `${id} ${quiet.byRace[id].est.p} -> ${res.byRace[id].est.p}`);
+  }
+  // Florida's own needle is judged on its own count, not pushed again by itself.
+  assert.equal(res.byRace.FL.nat.used.length, 0);
+});

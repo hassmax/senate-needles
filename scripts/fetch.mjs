@@ -6,7 +6,7 @@ import path from "node:path";
 import { allCounts } from "./sources/states.mjs";
 import { allMarkets, kalshiControl } from "./sources/markets.mjs";
 import { bluesky, news, detectCall, featured, liveEstimates } from "./sources/social.mjs";
-import { needle } from "../site/model.js";
+import { needles } from "../site/model.js";
 import { log } from "./lib.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -85,9 +85,11 @@ for (const r of races) {
 // History: what the needle shows (site/model.js needle), once a minute at most.
 const now = Math.floor(Date.now() / 1000);
 const since = config.history_since ? Date.parse(config.history_since) / 1000 : 0;
+const baselines = Object.fromEntries(races.map((r) => [r.id, readJSON(path.join(root, `site/data/baseline/${r.id}.json`))]));
+const N = needles(races, baselines, out.races, analyst, config, Date.now());
+if (N.national.used.length) log(`[national] counts so far run ${(N.national.shift * 100).toFixed(1)} pts from expectations (positive = Democrats), from ${N.national.used.join(", ")}`);
 for (const r of races) {
-  const base = readJSON(path.join(root, `site/data/baseline/${r.id}.json`));
-  const { est: e } = needle(r, base, out.races[r.id], analyst[r.id], config, Date.now());
+  const e = N.byRace[r.id].est;
   const h = (history[r.id] = (history[r.id] || []).filter((x) => x[0] >= since));
   const last = h[h.length - 1];
   const point = [now, +e.p.toFixed(4), +(e.margin * 100).toFixed(2), +(e.reported || 0).toFixed(3)];

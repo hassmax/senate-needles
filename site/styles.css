@@ -118,6 +118,7 @@ a { color: inherit; }
 .headline .who b { font-size: 18px; }
 .headline .lean { font-weight: 400; color: var(--muted); font-size: 13px; }
 .est { text-align: center; color: var(--muted); font-size: 13px; }
+.est .xs { color: var(--ink); }
 .bar { height: 6px; border-radius: 3px; background: var(--toss); overflow: hidden; margin: 4px 0 2px; }
 .bar > span { display: block; height: 100%; background: var(--ink); opacity: 0.55; }
 .meta { font-size: 12px; color: var(--muted); }

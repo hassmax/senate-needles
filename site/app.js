@@ -1,4 +1,4 @@
-import { marketShare, lean, phi, priorOf, needle } from "./model.js?v=__BUILD__";
+import { marketShare, lean, phi, priorOf, needles } from "./model.js?v=__BUILD__";
 
 const REFRESH_MS = 20000;
 const BUILD = document.querySelector('meta[name="build"]').content;
@@ -41,6 +41,7 @@ const svgEl = (tag, attrs = {}) => {
 const partyVar = (party) => (party === "D" ? "dem" : party === "R" ? "rep" : "ind");
 const pct = (x, d = 0) => (x * 100).toFixed(d);
 const fmtTime = (iso) => (iso ? ET.format(new Date(iso)) : "");
+const stateName = (id) => ((S.config && S.config.races.find((r) => r.id === id)) || { state: id }).state;
 
 async function getJSON(url) {
   const res = await fetch(url, { cache: "no-store" });
@@ -115,10 +116,13 @@ function setArm(card, p) {
 }
 
 // ---------- per-race estimate ----------
+// All needles at once, since each race's starting point depends on the other states' counts.
+function computeAll() {
+  S.N = needles(S.config.races, S.baselines, (S.live && S.live.races) || {}, (S.live && S.live.analyst) || {}, S.config, Date.now());
+}
 function raceView(race) {
   const lr = (S.live && S.live.races && S.live.races[race.id]) || {};
-  const analyst = S.live && S.live.analyst && S.live.analyst[race.id];
-  return { lr, ...needle(race, S.baselines[race.id], lr, analyst, S.config, Date.now()) };
+  return { lr, ...S.N.byRace[race.id] };
 }
 
 // ---------- cards ----------
@@ -207,6 +211,11 @@ function updateCard(race, card) {
   } else {
     card.est.textContent = `Before the count · polling average ${marginText(race, race.prior.margin / 100)}`;
     card.est.title = "Starting point: the final polling average blended with G. Elliott Morris's final forecast";
+  }
+  // Results elsewhere: say how far other states' counts moved this race's starting point.
+  if (est.mode !== "market" && v.prior && Math.abs(v.prior.shift || 0) >= 0.3) {
+    const toward = v.prior.shift > 0 ? race.left : race.right;
+    card.est.append(el("span", { class: "xs", text: ` · moved ${Math.abs(v.prior.shift).toFixed(1)} pts toward ${toward.last} by counts in ${v.nat.used.length > 3 ? `${v.nat.used.length} other states` : v.nat.used.map(stateName).join(", ")}` }));
   }
 
   // Counted share bar
@@ -376,6 +385,13 @@ function renderSummary() {
       el("b", { class: "dem", text: `Democrats ${pct(ctl.d / ((ctl.d + ctl.r) || 1))}%` }), " · ",
       el("b", { class: "rep", text: `Republicans ${pct(ctl.r / ((ctl.d + ctl.r) || 1))}%` })));
   }
+  const nat = S.N && S.N.national;
+  if (nat && nat.used.length) {
+    const pts = nat.shift * 100;
+    box.append(el("div", { class: "item" }, "Counts so far vs. expectations: ",
+      el("b", { class: pts > 0 ? "dem" : "rep", text: `${Math.abs(pts).toFixed(1)} pts ${pts > 0 ? "better for Democrats" : "better for Republicans"}` }),
+      el("span", { class: "muted", text: ` (${nat.used.map(stateName).join(", ")}); other races adjusted` })));
+  }
   let l = 0, r = 0, t = 0;
   for (const race of S.config.races) {
     const e = S.est[race.id];
@@ -476,6 +492,7 @@ async function refresh() {
 }
 
 function renderAll() {
+  computeAll();
   for (const race of S.config.races) updateCard(race, S.cards[race.id]);
   renderSummary();
   renderFeed();

@@ -6,14 +6,11 @@ const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
   extra: [
-    "https://electionresults.nebraska.gov/resultsCSV.aspx?text=All&type=SW&map=CTY",
-    "https://electionresults.nebraska.gov/resultsCSV.aspx?text=All&type=All&map=CTY",
-    "https://liveresults.ohiosos.gov/",
+    "https://www.elections.alaska.gov/enr/26GENR/results/GA_ENR_Precinct_State_of_Alaska.csv",
     "https://results.elections.myflorida.com/downloadresults.asp?ElectionDate=11/5/2024&DATAMODE=",
-    "https://results.elections.myflorida.com/Index.asp?ElectionDate=11/3/2026&DATAMODE=",
-    "https://www.elections.alaska.gov/results/26GENR/",
-    "https://www.elections.alaska.gov/election-results/",
-    "https://www.elections.alaska.gov/results/24GENR/",
+    "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/5/2024&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download",
+    "https://liveresults.ohiosos.gov/",
+    "https://electionresults.nebraska.gov/resultsSW.aspx?type=SW&map=CTY",
   ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
@@ -89,7 +86,7 @@ async function probe(url, out = console.log) {
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
     if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
-    for (const k of ["function downloadReport", "downloadReport(", "AllResultsXml", "Senat", "SENAT", "ElecResults", "26GENR", "Summary", "summary"]) {
+    for (const k of ["<form", "<FORM", "Extract", "resultsCSV", "13224", "U.S. Senat", "United States Senat"]) {
       const i = text.indexOf(k);
       if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 400), i + 1200), 1600));
     }
@@ -110,6 +107,17 @@ async function probe(url, out = console.log) {
       }
       for (const m of text.matchAll(/https?:\/\/[^\s"'<>]*(?:clarityelections|api|\.json|\.zip)[^\s"'<>]*/gi)) links.add(m[0]);
       if (links.size) console.log("links:", [...links].slice(0, 40).join(" | "));
+      const scripts = [...text.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]);
+      if (scripts.length) console.log("scripts:", scripts.join(" | "));
+      if (url.includes("ohiosos")) {
+        for (const src of scripts) {
+          try {
+            const js = await (await fetch(new URL(src, url), { headers: { "User-Agent": UA } })).text();
+            const k = js.indexOf("downloadReport");
+            if (k >= 0) console.log(`in ${src}:`, short(js.slice(Math.max(0, k - 200), k + 1500), 1700));
+          } catch (e) { console.log("script", src, e.message); }
+        }
+      }
     }
   } catch (e) {
     console.log(`\n=== ${url}\nFAILED ${e.name}: ${e.message} ${e.cause ? e.cause.code || e.cause.message : ""}`);

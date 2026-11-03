@@ -224,3 +224,24 @@ export function lean(p) {
   if (q < 0.99) return "Very likely";
   return "Near certain";
 }
+
+// What the needle shows for a race, the same on the page and in the saved trend:
+// the count model where there's an official count; market odds where there isn't one and polls
+// have closed; the starting point before that; then any live analyst estimate blended in.
+// live = {counts, markets: {kalshi, polymarket}}, analyst = {p_left, time} or null.
+export function needle(race, baseline, live, analyst, cfg, now) {
+  const closed = now >= Date.parse(race.polls_close);
+  const kal = live && live.markets && live.markets.kalshi, poly = live && live.markets && live.markets.polymarket;
+  const mk = [marketShare(kal), marketShare(poly)].filter((x) => x != null);
+  const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
+  const counts = live && live.counts && live.counts.ok ? live.counts : null;
+  const prior = priorOf(race, cfg.forecast_weight ?? 0.7);
+  let est = estimate(baseline, counts, { prior, turnout: race.turnout || cfg.turnout_default, late_share: race.late_share, rcv: race.rcv });
+  const noCount = !!race.no_live_count || (closed && !counts);
+  if (noCount && closed && mAvg != null) {
+    est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
+  }
+  const b = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
+  if (b.w > 0) est = { ...est, p: b.p, analyst: { ...analyst, w: b.w } };
+  return { est, closed, kal, poly, mAvg, counts, prior };
+}

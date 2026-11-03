@@ -1,4 +1,4 @@
-import { estimate, marketShare, lean, phi, priorOf, blendLive } from "./model.js?v=__BUILD__";
+import { marketShare, lean, phi, priorOf, needle } from "./model.js?v=__BUILD__";
 
 const REFRESH_MS = 20000;
 const BUILD = document.querySelector('meta[name="build"]').content;
@@ -117,27 +117,8 @@ function setArm(card, p) {
 // ---------- per-race estimate ----------
 function raceView(race) {
   const lr = (S.live && S.live.races && S.live.races[race.id]) || {};
-  const now = Date.now();
-  const closed = now >= Date.parse(race.polls_close);
-  const kal = lr.markets && lr.markets.kalshi, poly = lr.markets && lr.markets.polymarket;
-  const mk = [marketShare(kal), marketShare(poly)].filter((x) => x != null);
-  const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
-  const counts = lr.counts && lr.counts.ok ? lr.counts : null;
-  const base = S.baselines[race.id];
-  const prior = priorOf(race, S.config.forecast_weight);
-  let est = estimate(base, counts, { prior, turnout: race.turnout || S.config.turnout_default, late_share: race.late_share, rcv: race.rcv });
-  // No official count to model (Maine, a blocked site, or a feed that failed): once polls close,
-  // the needle shows market odds, which move with the count; before that, the forecast (if any).
-  const noCount = !!race.no_live_count || (closed && !counts);
-  if (noCount && closed && mAvg != null) {
-    est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
-  }
-  // A win probability G. Elliott Morris has posted for this race tonight is blended in, fading
-  // over the following hours and as the count comes in.
-  const live = S.live && S.live.analyst && S.live.analyst[race.id];
-  const b = blendLive(est.p, live, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
-  if (b.w > 0) est = { ...est, p: b.p, analyst: { ...live, w: b.w } };
-  return { lr, closed, kal, poly, mAvg, est, counts, prior };
+  const analyst = S.live && S.live.analyst && S.live.analyst[race.id];
+  return { lr, ...needle(race, S.baselines[race.id], lr, analyst, S.config, Date.now()) };
 }
 
 // ---------- cards ----------
@@ -156,13 +137,13 @@ function buildCard(race) {
     tally: el("div", { class: "tally" }),
     call: el("div", { class: "callbox" }),
     markets: el("div", { class: "markets" }),
-    spark: svgEl("svg", { class: "spark", viewBox: "0 0 300 34", preserveAspectRatio: "none", "aria-hidden": "true" }),
+    trend: el("figure", { class: "trend" }),
     note: el("div", { class: "note" }),
     sources: el("div", { class: "sources" }),
     p: 0.5, band: [0.5, 0.5],
   };
   card.head.append(el("h3", { text: race.title }), card.status);
-  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.spark, card.note, card.sources);
+  card.root.append(card.head, needle.wrap, card.headline, card.est, card.bar, card.meta, card.tally, card.call, card.markets, card.trend, card.note, card.sources);
   return card;
 }
 
@@ -268,7 +249,7 @@ function updateCard(race, card) {
   if (!card.markets.childNodes.length) card.markets.append(el("span", { text: "Market odds not available yet." }));
 
   // Sparkline of the needle over the night
-  drawSpark(card.spark, S.history[race.id] || [], race);
+  drawTrend(card.trend, S.history[race.id] || [], race, est);
 
   // Notes
   const notes = [];
@@ -290,19 +271,74 @@ function marginText(race, m) {
   return `${m > 0 ? race.left.last : race.right.last} +${Math.abs(m * 100).toFixed(1)}`;
 }
 
-function drawSpark(svg, pts, race) {
-  svg.replaceChildren();
-  svg.append(svgEl("line", { x1: 0, y1: 17, x2: 300, y2: 17, stroke: "var(--line)", "stroke-width": "1" }));
-  if (pts.length < 2) return;
-  const t0 = pts[0][0], t1 = pts[pts.length - 1][0] || t0 + 1;
-  const xy = pts.map(([t, p]) => [((t - t0) / Math.max(1, t1 - t0)) * 300, 2 + (1 - p) * 30]);
-  svg.append(svgEl("polyline", {
-    points: xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "), fill: "none",
-    stroke: pts[pts.length - 1][1] >= 0.5 ? `var(--${partyVar(race.left.party)})` : `var(--${partyVar(race.right.party)})`,
-    "stroke-width": "1.6", "vector-effect": "non-scaling-stroke",
-  }));
-  const title = svgEl("title", {}); title.textContent = `${race.left.last}'s chance over the night (top = ${race.left.last}, bottom = ${race.right.last})`;
-  svg.append(title);
+// Chance of winning over the night: one line per candidate (they mirror each other around 50%),
+// a 0/50/100% scale, hour marks in Eastern time, the polls-close time, and today's values at the
+// right end of each line.
+const HOUR = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric" });
+function drawTrend(fig, pts, race, est) {
+  fig.replaceChildren();
+  const now = Date.now() / 1000;
+  const data = pts.filter((x) => x && isFinite(x[1]));
+  // The last point is what the needle shows right now.
+  if (!data.length || now - data[data.length - 1][0] > 30) data.push([now, est.p]);
+  const L = partyVar(race.left.party), R = partyVar(race.right.party);
+  fig.append(el("figcaption", { text: "Chance of winning over time" }));
+  if (data.length < 3) {
+    fig.append(el("p", { class: "trend-empty", text: "The trend line fills in as updates come in." }));
+    return;
+  }
+  const W = 320, H = 132, x0 = 34, x1 = 230, y0 = 10, y1 = 104;
+  const t0 = data[0][0], t1 = Math.max(data[data.length - 1][0], t0 + 600);
+  const X = (t) => x0 + ((t - t0) / (t1 - t0)) * (x1 - x0);
+  const Y = (p) => y1 - p * (y1 - y0);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "trend-svg", role: "img" });
+  // Scale and gridlines
+  for (const [p, label] of [[1, "100%"], [0.5, "50%"], [0, "0%"]]) {
+    svg.append(svgEl("line", { x1: x0, x2: x1, y1: Y(p), y2: Y(p), stroke: p === 0.5 ? "var(--faint)" : "var(--line)", "stroke-width": "1", "stroke-dasharray": p === 0.5 ? "3 3" : "" }));
+    const t = svgEl("text", { x: x0 - 5, y: Y(p) + 3.5, "text-anchor": "end", class: "trend-axis" }); t.textContent = label;
+    svg.append(t);
+  }
+  // Hour marks (every hour, or every 2-3 when the span is long)
+  const span = (t1 - t0) / 3600;
+  const step = span > 8 ? 3 : span > 4 ? 2 : 1;
+  let h = Math.ceil(t0 / 3600) * 3600;
+  for (; h <= t1; h += 3600) {
+    const hourET = +HOUR.formatToParts(new Date(h * 1000)).find((x) => x.type === "hour").value;
+    if (hourET % step) continue;
+    svg.append(svgEl("line", { x1: X(h), x2: X(h), y1: y1, y2: y1 + 4, stroke: "var(--faint)", "stroke-width": "1" }));
+    const t = svgEl("text", { x: X(h), y: y1 + 15, "text-anchor": "middle", class: "trend-axis" });
+    t.textContent = HOUR.format(new Date(h * 1000)).replace(" ", "\u202f");
+    svg.append(t);
+  }
+  // Polls close
+  const close = Date.parse(race.polls_close) / 1000;
+  if (close > t0 && close < t1) {
+    svg.append(svgEl("line", { x1: X(close), x2: X(close), y1: y0, y2: y1, stroke: "var(--muted)", "stroke-width": "1", "stroke-dasharray": "2 3" }));
+    const t = svgEl("text", { x: X(close) + 3, y: y0 + 8, class: "trend-axis" }); t.textContent = "polls close";
+    svg.append(t);
+  }
+  // The two lines
+  const line = (f, color) => svgEl("polyline", {
+    points: data.map(([t, p]) => `${X(t).toFixed(1)},${Y(f(p)).toFixed(1)}`).join(" "),
+    fill: "none", stroke: `var(--${color})`, "stroke-width": "2.2", "stroke-linejoin": "round", "stroke-linecap": "round",
+  });
+  const lead = est.p >= 0.5;
+  // Draw the trailing candidate first so the leader's line sits on top.
+  const lines = [[(p) => p, L], [(p) => 1 - p, R]];
+  for (const [f, c] of lead ? lines.reverse() : lines) svg.append(line(f, c));
+  // End dots and labels, nudged apart when the race is close
+  const pl = data[data.length - 1][1], ex = X(data[data.length - 1][0]);
+  let yl = Y(pl), yr = Y(1 - pl);
+  if (Math.abs(yl - yr) < 14) { const mid = (yl + yr) / 2, d = yl <= yr ? -7 : 7; yl = mid + d; yr = mid - d; }
+  for (const [p, y, c, name] of [[pl, yl, L, race.left.last], [1 - pl, yr, R, race.right.last]]) {
+    svg.append(svgEl("circle", { cx: ex, cy: Y(p), r: 3.2, fill: `var(--${c})` }));
+    const t = svgEl("text", { x: ex + 7, y: y + 4, class: "trend-end", fill: `var(--${c})` });
+    t.textContent = `${pct(p)}% ${name}`;
+    svg.append(t);
+  }
+  const first = data[0][1];
+  svg.setAttribute("aria-label", `${race.left.last}'s chance went from ${pct(first)}% at ${fmtTime(new Date(t0 * 1000))} to ${pct(pl)}% now; ${race.right.last}'s from ${pct(1 - first)}% to ${pct(1 - pl)}%.`);
+  fig.append(svg);
 }
 
 // ---------- jitter ----------

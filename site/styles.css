@@ -129,7 +129,12 @@ a { color: inherit; }
 .markets a { text-decoration: none; border-bottom: 1px dotted var(--faint); }
 .note { font-size: 12px; color: var(--muted); background: var(--chip); border-radius: 6px; padding: 6px 8px; }
 .callbox { font-size: 13px; color: var(--call); font-weight: 600; }
-.spark { width: 100%; height: 34px; display: block; }
+.trend { margin: 4px 0 0; }
+.trend figcaption { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.trend-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.trend-axis { font-size: 10px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.trend-end { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.trend-empty { margin: 0; font-size: 12px; color: var(--faint); }
 .sources { font-size: 11px; color: var(--faint); }
 .sources a { color: var(--muted); }
 

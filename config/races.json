@@ -1,5 +1,5 @@
 {
-  "_note": "Edit this file on GitHub to change a race: priors, candidates, feeds, or a hand call (set \"call\": {\"winner\": \"left\" or \"right\", \"by\": \"AP\", \"url\": \"...\"}). Margins are left candidate minus right candidate, in points. The next update picks up changes. 'forecast' is G. Elliott Morris's final forecast (left candidate's chance), entered by hand; 'forecast_weight' is how much it counts against the polling average in each needle's starting point.",
+  "_note": "Edit this file on GitHub to change a race: priors, candidates, feeds, or a hand call (set \"call\": {\"winner\": \"left\" or \"right\", \"by\": \"AP\", \"url\": \"...\"}). Margins are left candidate minus right candidate, in points. The next update picks up changes. 'forecast' is G. Elliott Morris's final forecast (left candidate's chance), entered by hand; 'forecast_weight' is how much it counts against the polling average in each needle's starting point. 'history_since': trend points before this time are dropped (set when the needle's method changed).",
   "election_date": "2026-11-03",
   "turnout_default": 0.75,
   "races": [
@@ -449,5 +449,6 @@
       }
     }
   ],
-  "forecast_weight": 0.7
+  "forecast_weight": 0.7,
+  "history_since": "2026-11-03T20:00:00Z"
 }

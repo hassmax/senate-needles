@@ -29,7 +29,7 @@ cache.social = cache.social || {};
 
 const withTimeout = (p, ms, label) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} took over ${ms / 1000}s`)), ms))]);
 const safe = async (label, fn, fallback) => {
-  try { return await withTimeout(fn(), 90000, label); } catch (e) { log(`[${label}] ${e.message}`); health.push({ name: label, ok: false, detail: e.message }); return fallback; }
+  try { return await withTimeout(fn(), 50000, label); } catch (e) { log(`[${label}] ${e.message}`); health.push({ name: label, ok: false, detail: e.message }); return fallback; }
 };
 
 const [counts, markets, control, posts, headlines] = await Promise.all([
@@ -99,3 +99,4 @@ fs.writeFileSync(path.join(STATE, "cache.json"), JSON.stringify(cache));
 const ok = health.filter((h) => h.ok).length;
 log(`done in ${((Date.now() - started) / 1000).toFixed(1)}s: ${ok}/${health.length} sources ok, ${feed.length} feed items, calls: ${Object.keys(calls).join(",") || "none"}`);
 for (const h of health.filter((x) => !x.ok)) log(`  not ok: ${h.name}: ${h.detail}`);
+process.exit(0); // don't wait for slow requests that were given up on

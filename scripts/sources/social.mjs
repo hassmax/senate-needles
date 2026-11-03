@@ -92,16 +92,16 @@ export async function bluesky(cfg, races, health, cache) {
   const listed = new Set(accounts.map((a) => a.handle));
   const found = [];
   const queries = [...(cfg.queries || []), ...races.flatMap((r) => (r.bsky_queries || []).map((q) => ({ q, race: r.id })))];
-  for (const entry of queries) {
+  await Promise.all(queries.map(async (entry) => {
     const q = typeof entry === "string" ? entry : entry.q;
     try {
-      const j = await getJSON(`${SEARCH}?q=${encodeURIComponent(q)}&sort=latest&limit=25`);
+      const j = await getJSON(`${SEARCH}?q=${encodeURIComponent(q)}&sort=latest&limit=25`, { timeout: 12000 });
       for (const p of j.posts || []) found.push({ p, race: entry.race || null });
     } catch (e) {
       log(`[bluesky] search "${q}": ${e.message}`);
       health.push({ name: `bluesky search "${q}"`, ok: false, detail: e.message });
     }
-  }
+  }));
   cache.followers = cache.followers || {};
   await followerCounts(found.map((f) => f.p.author.handle).filter((h) => !listed.has(h)), cache.followers);
   const min = cfg.min_followers || 3000;

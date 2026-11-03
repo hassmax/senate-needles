@@ -3,7 +3,7 @@ import zlib from "node:zlib";
 
 export const UA = "senate-needles/1.0 (+https://github.com/hassmax/senate-needles)";
 
-export async function get(url, { timeout = 20000, headers = {}, as = "text" } = {}) {
+export async function get(url, { timeout = 15000, headers = {}, as = "text" } = {}) {
   const res = await fetch(url, {
     headers: { "User-Agent": UA, Accept: "*/*", ...headers },
     redirect: "follow",

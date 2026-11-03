@@ -233,7 +233,12 @@ function updateCard(race, card) {
     card.est.textContent = `${est.note}.`;
   } else {
     card.est.textContent = `Before the count · polling average ${marginText(race, race.prior.margin / 100)}`;
-    card.est.title = "Starting point: the final polling average blended with G. Elliott Morris's final forecast";
+    card.est.title = "Starting point: G. Elliott Morris's final forecast (50%), Decision Desk HQ's (30%) and the polling average (20%)";
+  }
+  if (est.market) {
+    const fav = (x) => (x >= 0.5 ? `${race.left.last} ${pct(x)}%` : `${race.right.last} ${pct(1 - x)}%`);
+    card.est.append(el("span", { class: "xs", title: "The needle blends this site's own estimate with the Kalshi/Polymarket average",
+      text: ` · includes market odds (${Math.round(est.market.w * 100)}%): own estimate ${fav(est.modelP)}, markets ${fav(est.market.p)}` }));
   }
   // Results elsewhere: say how far other states' counts moved this race's starting point.
   if (est.mode !== "market" && v.prior && Math.abs(v.prior.shift || 0) >= 0.3) {
@@ -461,7 +466,7 @@ function renderControl() {
   row("Polymarket", ctl.polymarket, "market");
   row("Decision Desk HQ", ctl.ddhq, ctl.ddhq && ctl.ddhq.time ? `forecast, posted ${fmtTime(ctl.ddhq.time)} ET` : "forecast");
   if (side.childNodes.length === 1) side.append(el("p", { class: "muted", text: "Not available yet." }));
-  side.append(el("p", { class: "fine", text: "Markets are shown for comparison and are not part of this site's estimate. Decision Desk HQ's forecast is part of each race's starting point." }));
+  side.append(el("p", { class: "fine", text: "Each race needle takes 30% from the Kalshi/Polymarket average, so markets feed into this estimate too. Decision Desk HQ's forecast is part of each race's starting point." }));
   box.append(main, side);
 }
 

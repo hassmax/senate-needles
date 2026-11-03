@@ -887,5 +887,7 @@
       "short": "AK",
       "note": "Alaska counts for two weeks; its needle stays wide."
     }
-  ]
+  ],
+  "market_weight": 0.3,
+  "_market_note": "market_weight: share of each needle taken from the Kalshi/Polymarket average (probit scale), owner's choice on election night. The national shift still learns only from counts."
 }

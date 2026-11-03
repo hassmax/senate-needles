@@ -311,13 +311,19 @@ export function needle(race, baseline, live, analyst, cfg, now, nat = null) {
   // The model's own chance (with Morris's live estimates), before any switch to market odds:
   // what the Senate-control estimate uses.
   const own = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
-  const model = { p: own.p, reported: est.mode === "model" || est.mode === "statewide" ? est.reported || 0 : 0 };
+  // Prediction markets (owner's choice): the Kalshi/Polymarket average is blended in at
+  // cfg.market_weight on the probit scale. They are still shown on their own as the K and P ticks.
+  const mw = cfg.market_weight ?? 0;
+  const withMarkets = (p) => (mw > 0 && mAvg != null
+    ? phi((1 - mw) * probit(clamp(p, 1e-4, 1 - 1e-4)) + mw * probit(clamp(mAvg, 1e-4, 1 - 1e-4))) : p);
+  const model = { p: withMarkets(own.p), reported: est.mode === "model" || est.mode === "statewide" ? est.reported || 0 : 0 };
   const noCount = !counts && (!!race.no_live_count || closed);
   if (noCount && closed && mAvg != null) {
     est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
   }
   const b = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
   if (b.w > 0) est = { ...est, p: b.p, analyst: { ...analyst, w: b.w } };
+  if (est.mode !== "market" && mw > 0 && mAvg != null) est = { ...est, p: withMarkets(est.p), modelP: est.p, market: { p: mAvg, w: mw } };
   return { est, model, closed, kal, poly, mAvg, counts, prior, base };
 }
 
@@ -348,7 +354,8 @@ export function needles(races, baselines, liveRaces, analyst, cfg, now, clues = 
   return { byRace: out, national, evidence, control: senateControl(cfg, races, out, national) };
 }
 
-// Senate control. Each tracked race uses the model's own chance (never market odds); every other
+// Senate control. Each tracked race uses its needle's chance (with the market blend, not the
+// market-only fallback); every other
 // seat up this year uses its forecast chance (cfg.senate.others), moved by the same national
 // shift. Polling misses are shared across races, so outcomes are added up over a range of
 // nationwide misses (NATIONAL_SHARE of each race's uncertainty) rather than as independent coin flips.

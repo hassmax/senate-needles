@@ -164,7 +164,8 @@
       "right": {
         "name": "Ken Paxton",
         "last": "Paxton",
-        "party": "R"
+        "party": "R",
+        "wiki": "Ken Paxton"
       },
       "prior": {
         "margin": 2.6,
@@ -261,7 +262,8 @@
         "name": "Susan Collins",
         "last": "Collins",
         "party": "R",
-        "incumbent": true
+        "incumbent": true,
+        "wiki": "Susan Collins"
       },
       "prior": {
         "margin": 5.1,

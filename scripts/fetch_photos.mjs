@@ -12,7 +12,7 @@ const UA = "senate-needles/1.0 (+https://github.com/hassmax/senate-needles)";
 const API = "https://en.wikipedia.org/w/api.php?format=json&formatversion=2&";
 const get = async (q) => (await fetch(API + q, { headers: { "User-Agent": UA } })).json();
 const strip = (h) => String(h || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-const FREE = /public domain|^pd|cc0|cc[ -]by/i;
+const FREE = /public domain|^pd|cc0|cc[ -]by|copyrighted free use/i;
 fs.mkdirSync(OUT, { recursive: true });
 const credits = {};
 for (const race of cfg.races) {
@@ -22,7 +22,7 @@ for (const race of cfg.races) {
       let title = c.wiki;
       if (!title) {
         const s = await get(`action=query&list=search&srlimit=5&srsearch=${encodeURIComponent(`${c.name} ${race.state} politician`)}`);
-        const hit = (s.query.search || []).find((h) => h.title.includes(c.last) && !/election|list of|district/i.test(h.title));
+        const hit = (s.query.search || []).find((h) => h.title.startsWith(c.name) && !/election|list of|district/i.test(h.title));
         if (!hit) { console.log(`${key} ${c.name}: no article found`); continue; }
         title = hit.title;
       }

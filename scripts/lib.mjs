@@ -10,10 +10,15 @@ export async function get(url, { timeout = 15000, headers = {}, as = "text" } = 
     signal: AbortSignal.timeout(timeout),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${new URL(url).host}`);
-  if (as === "json") return res.json();
+  if (res.status === 202 && res.headers.get("x-amzn-waf-action")) throw new Error(`${new URL(url).host} asks for a browser check`);
+  if (as === "text" || as === "json") {
+    const t = await res.text();
+    if (/<title>Just a moment\.\.\.<\/title>|challenges\.cloudflare\.com/.test(t.slice(0, 3000))) throw new Error(`${new URL(url).host} asks for a browser check`);
+    if (/<title>[^<]*maintenance[^<]*<\/title>/i.test(t.slice(0, 3000))) throw new Error(`${new URL(url).host} shows a maintenance page`);
+    return as === "json" ? JSON.parse(t) : t;
+  }
   if (as === "buffer") return Buffer.from(await res.arrayBuffer());
-  if (as === "response") return res;
-  return res.text();
+  return res;
 }
 
 export const getJSON = (url, opts = {}) => get(url, { ...opts, as: "json" });

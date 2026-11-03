@@ -42,7 +42,8 @@
       "counts": {
         "reader": "nist",
         "url": "https://liveresults.ohiosos.gov/Api/v1/download?filename=VSSC1622XmlFileBlob",
-        "source": "Ohio Secretary of State"
+        "source": "Ohio Secretary of State",
+        "min_interval": 90
       }
     },
     {
@@ -82,7 +83,8 @@
         "kalshi": "SENATEFLS-26"
       },
       "counts": {
-        "reader": "florida"
+        "reader": "florida",
+        "min_interval": 150
       }
     },
     {
@@ -338,7 +340,8 @@
         "Osborn Ricketts"
       ],
       "counts": {
-        "reader": "nebraska"
+        "reader": "nebraska",
+        "min_interval": 60
       },
       "markets": {
         "polymarket": "nebraska-senate-election-winner",
@@ -391,7 +394,8 @@
         "kalshi": "SENATEAK-26"
       },
       "counts": {
-        "reader": "alaska"
+        "reader": "alaska",
+        "min_interval": 120
       }
     }
   ]

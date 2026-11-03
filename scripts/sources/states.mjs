@@ -220,6 +220,11 @@ export async function allCounts(races, prev, cache, health) {
     const old = prev && prev[race.id] && prev[race.id].counts;
     if (!cfg || !READERS[cfg.reader]) { out[race.id] = old || null; return; }
     const c = (cache[race.id] = cache[race.id] || {});
+    // Some sites challenge readers that ask too often (Florida's did, three requests in a row), and
+    // most only refresh every few minutes anyway: ask each at most every `min_interval` seconds.
+    const wait = (cfg.min_interval || 60) * 1000;
+    if (c.lastTry && Date.now() - c.lastTry < wait && old) { out[race.id] = old; return; }
+    c.lastTry = Date.now();
     try {
       const r = await READERS[cfg.reader](race, cfg, c);
       r.units = r.units || [];

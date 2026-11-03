@@ -12,8 +12,12 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   `site/model.js`). It is not a professional forecast.
 - **Ticks on the dial**: K (Kalshi) and P (Polymarket) betting prices, and a hollow mark for the
   polling average. They are shown beside the estimate, never mixed into it.
-- **Where there's no official live count** (Maine, or any state whose feed stops answering after
-  its polls close), the needle shows the market average and says so.
+- **Which states have live counts**: Ohio (the Secretary of State's NIST XML feed), Florida
+  (the Division of Elections' results extract), Alaska (the precinct CSV, added up by house
+  district) and Nebraska (statewide totals CSV). Texas and Michigan refuse requests from GitHub's
+  servers. South Carolina, Iowa and Kansas use Clarity, whose browser check automated readers
+  can't pass. Maine posts no live count. These six show the market average instead, labelled "market odds", as does a
+  counted state whose feed stops answering after its polls close.
 - **Race calls** appear only when the AP's own post says so, or when you set one by hand (below).
 - **Live feed**: posts from news organizations and analysts on Bluesky, Bluesky keyword searches
   (well-followed accounts only, marked "search"), and Google News headlines. Each item is a short

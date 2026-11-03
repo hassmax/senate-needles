@@ -1,4 +1,4 @@
-import { estimate, marketShare, lean, phi } from "./model.js?v=__BUILD__";
+import { estimate, marketShare, lean, phi, priorOf } from "./model.js?v=__BUILD__";
 
 const REFRESH_MS = 20000;
 const BUILD = document.querySelector('meta[name="build"]').content;
@@ -124,15 +124,17 @@ function raceView(race) {
   const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
   const counts = lr.counts && lr.counts.ok ? lr.counts : null;
   const base = S.baselines[race.id];
-  let est = estimate(base, counts, { prior: race.prior, turnout: race.turnout || S.config.turnout_default, late_share: race.late_share, rcv: race.rcv });
-  // No official count to model (Maine, or a feed that failed): after polls close show market odds.
+  const prior = priorOf(race);
+  let est = estimate(base, counts, { prior, turnout: race.turnout || S.config.turnout_default, late_share: race.late_share, rcv: race.rcv });
+  // No official count to model (Maine, a blocked site, or a feed that failed): once polls close,
+  // the needle shows market odds, which move with the count; before that, the forecast (if any).
   const noCount = !!race.no_live_count || (closed && !counts);
   if (noCount && closed && mAvg != null) {
     est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
-  } else if (race.no_live_count && mAvg != null && est.mode === "prior") {
+  } else if (race.no_live_count && mAvg != null && est.mode === "prior" && prior.from !== "forecast") {
     est = { ...est, mode: "market", p: mAvg, note: "Market odds: no official live count" };
   }
-  return { lr, closed, kal, poly, mAvg, est, counts };
+  return { lr, closed, kal, poly, mAvg, est, counts, prior };
 }
 
 // ---------- cards ----------
@@ -190,8 +192,10 @@ function updateCard(race, card) {
     card.band = [phi((est.margin - 0.25 * est.sd) / est.sd), phi((est.margin + 0.25 * est.sd) / est.sd)];
   } else card.band = [est.p, est.p];
   if (!jitterOn()) setArm(card, est.p);
+  const f = race.forecast;
   const marks = [
-    { p: phi(race.prior.margin / race.prior.sd), label: "", hollow: true, title: `Pre-election polling average: ${marginText(race, race.prior.margin / 100)}` },
+    f ? { p: f.p_left, label: "M", hollow: true, title: `${f.source}: ${race.left.last} ${pct(f.p_left)}%` }
+      : { p: phi(race.prior.margin / race.prior.sd), label: "", hollow: true, title: `Pre-election polling average: ${marginText(race, race.prior.margin / 100)}` },
     { p: marketShare(v.kal), label: "K", title: "Kalshi market price" },
     { p: marketShare(v.poly), label: "P", title: "Polymarket market price" },
   ];
@@ -209,7 +213,11 @@ function updateCard(race, card) {
   if (est.mode === "model" || est.mode === "statewide") {
     card.est.textContent = `Est. final margin: ${marginText(race, est.margin)} · 80% range ${marginText(race, est.lo)} to ${marginText(race, est.hi)}`;
   } else if (est.mode === "market") {
-    card.est.textContent = `${est.note}. Polling average was ${marginText(race, race.prior.margin / 100)}.`;
+    card.est.textContent = f ? `${est.note}. Morris's forecast was ${f.p_left >= 0.5 ? race.left.last : race.right.last} ${pct(Math.max(f.p_left, 1 - f.p_left))}%.`
+      : `${est.note}. Polling average was ${marginText(race, race.prior.margin / 100)}.`;
+  } else if (f) {
+    card.est.textContent = `G. Elliott Morris's forecast${f.margin != null ? `: ${marginText(race, f.margin / 100)}` : ""}`;
+    card.est.title = `${f.source}${f.as_of ? `, as of ${f.as_of}` : ""}`;
   } else {
     card.est.textContent = `Polling average: ${marginText(race, race.prior.margin / 100)}`;
     card.est.title = `${race.prior.source}, as of ${race.prior.as_of}`;

@@ -6,7 +6,7 @@ import path from "node:path";
 import { allCounts } from "./sources/states.mjs";
 import { allMarkets, kalshiControl } from "./sources/markets.mjs";
 import { bluesky, news, detectCall, featured } from "./sources/social.mjs";
-import { estimate } from "../site/model.js";
+import { estimate, priorOf } from "../site/model.js";
 import { log } from "./lib.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -82,7 +82,7 @@ const now = Math.floor(Date.now() / 1000);
 for (const r of races) {
   const base = readJSON(path.join(root, `site/data/baseline/${r.id}.json`));
   const c = out.races[r.id].counts;
-  const e = estimate(base, c && c.ok ? c : null, { prior: r.prior, turnout: r.turnout || config.turnout_default, late_share: r.late_share, rcv: r.rcv });
+  const e = estimate(base, c && c.ok ? c : null, { prior: priorOf(r), turnout: r.turnout || config.turnout_default, late_share: r.late_share, rcv: r.rcv });
   const h = (history[r.id] = history[r.id] || []);
   const last = h[h.length - 1];
   const point = [now, +e.p.toFixed(4), +(e.margin * 100).toFixed(2), +e.reported.toFixed(3)];

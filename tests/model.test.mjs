@@ -72,3 +72,18 @@ test("ranked choice widens the range when nobody passes 50%", () => {
   const b = estimate(ak, c, { prior: { margin: 3, sd: 6 }, turnout: 0.75, late_share: 0.3, rcv: true });
   assert.ok(b.sd > a.sd);
 });
+
+test("probit inverts phi", async () => {
+  const { probit } = await import("../site/model.js");
+  for (const p of [0.01, 0.2, 0.5, 0.63, 0.77, 0.99]) assert.ok(Math.abs(phi(probit(p)) - p) < 1e-6, p);
+});
+
+test("a forecast sets the starting point to its own probability", async () => {
+  const { priorOf, estimate: est } = await import("../site/model.js");
+  const race = { prior: { margin: 2.8, sd: 5.5 }, forecast: { p_left: 0.62, margin: 1.9, source: "Morris" } };
+  const pr = priorOf(race);
+  assert.ok(Math.abs(phi(pr.margin / pr.sd) - 0.62) < 1e-6);
+  assert.ok(Math.abs(est(base, null, { prior: pr, turnout: 0.8 }).p - 0.62) < 1e-6);
+  const onlyP = priorOf({ prior: { margin: 2.8, sd: 5.5 }, forecast: { p_left: 0.3 } });
+  assert.ok(Math.abs(phi(onlyP.margin / onlyP.sd) - 0.3) < 1e-6 && onlyP.margin < 0);
+});

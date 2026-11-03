@@ -77,6 +77,15 @@ export const num = (x) => {
 // Which side a candidate or party label belongs to for a race: "left", "right" or "other".
 export function sideOf(race, { name = "", party = "" } = {}) {
   const n = String(name).toLowerCase(), pa = String(party).toLowerCase();
+  // "match": exact name forms for states with two candidates of one surname (Alaska's Sullivans).
+  for (const side of ["left", "right"]) {
+    const m = race[side].match;
+    if (m && m.some((x) => n.includes(x.toLowerCase()))) return side;
+  }
+  if (race.left.match || race.right.match) {
+    const either = [race.left, race.right].some((c) => c.match && n.includes(c.last.toLowerCase()));
+    if (either) return "other";
+  }
   const has = (c) => c && n.includes(c.last.toLowerCase());
   if (has(race.left) && !has(race.right)) return "left";
   if (has(race.right) && !has(race.left)) return "right";

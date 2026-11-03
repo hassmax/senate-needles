@@ -27,6 +27,16 @@ jobs:
           openssl x509 -inform der -in /tmp/ak.crt -out /tmp/ak.pem
           echo "NODE_EXTRA_CA_CERTS=/tmp/ak.pem" >> "$GITHUB_ENV"
       - run: node scripts/probe.mjs ${{ inputs.groups }}
+      - name: Count readers against real files
+        continue-on-error: true
+        run: |
+          node scripts/try_reader.mjs FL "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/5/2024&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download" "Debbie Mucarsel-Powell" "Rick Scott"
+          node scripts/try_reader.mjs FL
+          node scripts/try_reader.mjs OH
+          node scripts/try_reader.mjs AK
+          node scripts/try_reader.mjs NE
+          curl -sS -m 30 "https://liveresults.ohiosos.gov/Api/v1/download?filename=VSSC1622XmlFileBlob" | head -c 1500; echo
+          curl -sS -m 30 "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/5/2024&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download" | head -3
       - name: Alaska certificate chain
         continue-on-error: true
         run: |

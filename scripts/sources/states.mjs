@@ -7,7 +7,7 @@ const SENATE_RE = /united states senat|u\.?\s?s\.?\s+senat|us senat|senator,? u\
 
 // ---------- Florida: the Division of Elections' tab-separated election-night file ----------
 async function florida(race, cfg) {
-  const url = cfg.url || "https://fldoselectionfiles.elections.myflorida.com/enightfilespublic/20261103_ElecResultsFL.txt";
+  const url = cfg.url || "https://results.elections.myflorida.com/ResultsExtract.Asp?ElectionDate=11/3/2026&OfficialResults=N&PartyRaces=N&DataMode=&FormsButton1=Download";
   const rows = parseDelimited(await get(url), "\t");
   const units = new Map();
   let pIn = 0, pAll = 0;
@@ -89,7 +89,129 @@ async function clarity(race, cfg, cache) {
   return { source: cfg.source || `${race.state} election results`, url: `${base}/web.${ver}/`, ...r };
 }
 
-const READERS = { florida, clarity };
+// ---------- Nebraska: the Secretary of State's media CSV (statewide totals) ----------
+async function nebraska(race, cfg) {
+  const url = cfg.url || "https://electionresults.nebraska.gov/resultsCSV.aspx?text=All&type=SW&map=CTY";
+  const rows = parseDelimited(await get(url), ",").filter((r) => /united states senator/i.test(r.RaceName || ""));
+  if (!rows.length) throw new Error("no U.S. Senate rows in the Nebraska file");
+  const byArea = new Map();
+  let precincts = null, updated = null;
+  for (const r of rows) {
+    const area = r.AreaType === "SW" || !r.AreaNum ? "__state" : r.AreaNum;
+    const u = byArea.get(area) || { name: area, left: 0, right: 0, other: 0, complete: false };
+    u[sideOf(race, { name: r.CandidateName, party: r.PartyCode })] += num(r.CandidateVotes);
+    const m = String(r.PrecinctsReporting || "").match(/(\d+)\s*\/\s*(\d+)/);
+    if (m) {
+      u.complete = +m[2] > 0 && +m[1] >= +m[2];
+      if (area === "__state") precincts = [+m[1], +m[2]];
+    }
+    if (r.CurrentDateTime) updated = r.CurrentDateTime;
+    byArea.set(area, u);
+  }
+  const state = byArea.get("__state");
+  const counties = [...byArea.values()].filter((u) => u.name !== "__state");
+  return {
+    source: "Nebraska Secretary of State", url: "https://electionresults.nebraska.gov/",
+    units: counties, statewide: counties.length ? null : state, precincts, stamp: updated,
+  };
+}
+
+// ---------- NIST 1500-100 election results XML (Ohio's feed) ----------
+const tag = (s, t) => { const m = s.match(new RegExp(`<${t}\\b[^>]*>([\\s\\S]*?)</${t}>`)); return m ? m[1].trim() : null; };
+const tags = (s, t) => [...s.matchAll(new RegExp(`<${t}\\b([^>]*)>([\\s\\S]*?)</${t}>`, "g"))];
+export function parseNist(xml, race) {
+  const gp = new Map();
+  for (const g of tags(xml, "GpUnit")) {
+    const id = (g[1].match(/ObjectId="([^"]+)"/) || [])[1];
+    const name = tag(g[2], "Name") || tag(tag(g[2], "Text") || "", "Text") || id;
+    gp.set(id, {
+      name: name.replace(/<[^>]+>/g, ""), type: (tag(g[2], "Type") || "").toLowerCase(),
+      total: num(tag(g[2], "TotalSubUnits")), reported: num(tag(g[2], "SubUnitsReported")),
+    });
+  }
+  const cands = new Map(), parties = new Map();
+  for (const p of tags(xml, "Party")) {
+    const id = (p[1].match(/ObjectId="([^"]+)"/) || [])[1];
+    parties.set(id, (tag(p[2], "Abbreviation") || tag(p[2], "Text") || tag(p[2], "Name") || "").replace(/<[^>]+>/g, ""));
+  }
+  for (const c of tags(xml, "Candidate")) {
+    const id = (c[1].match(/ObjectId="([^"]+)"/) || [])[1];
+    const name = (tag(c[2], "BallotName") || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    cands.set(id, { name, party: parties.get(tag(c[2], "PartyId")) || "" });
+  }
+  const contest = tags(xml, "Contest").find((c) => {
+    const name = (tag(c[2].replace(/<BallotSelection[\s\S]*<\/BallotSelection>/g, ""), "Name") || "").replace(/<[^>]+>/g, "");
+    return /u\.?\s?s\.?\s+senat|united states senat/i.test(name) && !/state senat/i.test(name);
+  });
+  if (!contest) throw new Error("no U.S. Senate contest in the XML feed");
+  const units = new Map();
+  for (const sel of tags(contest[2], "BallotSelection")) {
+    const cid = tag(sel[2], "CandidateIds") || tag(sel[2], "CandidateId");
+    const cand = cands.get(cid) || { name: "", party: "" };
+    const side = sideOf(race, cand);
+    const perUnit = new Map();
+    for (const vc of tags(sel[2], "VoteCounts")) {
+      const g = tag(vc[2], "GpUnitId"), type = (tag(vc[2], "Type") || "total").toLowerCase(), n = num(tag(vc[2], "Count"));
+      const e = perUnit.get(g) || { total: null, sum: 0 };
+      if (type === "total") e.total = n; else e.sum += n;
+      perUnit.set(g, e);
+    }
+    for (const [g, e] of perUnit) {
+      const info = gp.get(g) || { name: g, type: "" };
+      const u = units.get(g) || { name: info.name, type: info.type, left: 0, right: 0, other: 0, complete: info.total > 0 && info.reported >= info.total };
+      u[side] += e.total != null ? e.total : e.sum;
+      units.set(g, u);
+    }
+  }
+  const all = [...units.values()];
+  const counties = all.filter((u) => u.type === "county");
+  const state = all.find((u) => u.type === "state");
+  const stateGp = [...gp.values()].find((g) => g.type === "state");
+  return {
+    units: counties.length ? counties : [],
+    statewide: counties.length ? null : state || null,
+    precincts: stateGp && stateGp.total ? [stateGp.reported, stateGp.total] : null,
+  };
+}
+
+async function nist(race, cfg) {
+  const xml = await get(cfg.url, { timeout: 45000 });
+  return { source: cfg.source || `${race.state} election results`, url: race.results_page, ...parseNist(xml, race) };
+}
+
+// ---------- Alaska: the Division of Elections' precinct CSV, added up by house district ----------
+export function parseAlaska(text, race) {
+  const rows = parseDelimited(text, ",");
+  const units = new Map();
+  let pIn = 0, pAll = 0;
+  const seenPct = new Set();
+  for (const r of rows) {
+    if (!/^u\.?s\.? senator/i.test(r.Contest_title || "")) continue;
+    const hd = String(r.Pct_Id || r.Precinct_name || "").match(/^(\d{1,2})-/);
+    if (!hd) continue;
+    const name = `District ${+hd[1]}`;
+    const u = units.get(name) || { name, left: 0, right: 0, other: 0, complete: true, _n: 0, _done: 0 };
+    u[sideOf(race, { name: r.candidate_name, party: r.Party_Code })] += num(r.total_votes);
+    if (!seenPct.has(r.Pct_Id)) {
+      seenPct.add(r.Pct_Id);
+      const done = String(r.Reporting_flag) === "1";
+      u._n++; if (done) u._done++;
+      pAll++; if (done) pIn++;
+    }
+    units.set(name, u);
+  }
+  if (!units.size) throw new Error("no U.S. Senate rows in the Alaska file");
+  const list = [...units.values()].map(({ _n, _done, ...u }) => ({ ...u, complete: _n > 0 && _done >= _n }));
+  return { units: list, precincts: pAll ? [pIn, pAll] : null };
+}
+
+async function alaska(race, cfg) {
+  const url = cfg.url || "https://www.elections.alaska.gov/enr/26GENR/results/GA_ENR_Precinct_State_of_Alaska.csv";
+  const text = await get(url, { timeout: 45000 });
+  return { source: "Alaska Division of Elections", url: race.results_page, ...parseAlaska(text, race) };
+}
+
+const READERS = { florida, clarity, nebraska, nist, alaska };
 
 export async function allCounts(races, prev, cache, health) {
   const out = {};
@@ -100,7 +222,8 @@ export async function allCounts(races, prev, cache, health) {
     const c = (cache[race.id] = cache[race.id] || {});
     try {
       const r = await READERS[cfg.reader](race, cfg, c);
-      const votes = r.units.reduce((a, u) => a + u.left + u.right + u.other, 0);
+      r.units = r.units || [];
+      const votes = (r.units.length ? r.units : [r.statewide || { left: 0, right: 0, other: 0 }]).reduce((a, u) => a + u.left + u.right + u.other, 0);
       out[race.id] = { ok: votes > 0, ...r, votes, fetched: new Date().toISOString(), updated: r.updated || (votes !== (old && old.votes) ? new Date().toISOString() : old && old.updated) || null, error: votes > 0 ? null : "no votes counted yet" };
       health.push({ name: `count ${race.id}`, ok: true, detail: `${votes} votes` });
     } catch (e) {

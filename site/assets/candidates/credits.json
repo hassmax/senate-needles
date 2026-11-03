@@ -1,0 +1,182 @@
+{
+  "OH-left": {
+    "name": "Sherrod Brown",
+    "file": "OH-left.jpg",
+    "article": "Sherrod Brown",
+    "description": "American politician (born 1952)",
+    "license": "Public domain",
+    "author": "U.S. Senate Photographic Services; Rebecca Hammel",
+    "source": "https://commons.wikimedia.org/wiki/File:Sherrod_Brown_117th_Congress_(2).jpg"
+  },
+  "OH-right": {
+    "name": "Jon Husted",
+    "file": "OH-right.jpg",
+    "article": "Jon Husted",
+    "description": "American politician (born 1967)",
+    "license": "Public domain",
+    "author": "United States Senate",
+    "source": "https://commons.wikimedia.org/wiki/File:Sen._Jon_Husted_official_portrait,_119th_Congress.jpg"
+  },
+  "FL-left": {
+    "name": "Angie Nixon",
+    "file": "FL-left.jpg",
+    "article": "Angie Nixon",
+    "description": "American politician (born 1984)",
+    "license": "Public domain",
+    "author": "Florida House of Representatives",
+    "source": "https://commons.wikimedia.org/wiki/File:Angie_Nixon_official_portrait.jpg"
+  },
+  "FL-right": {
+    "name": "Ashley Moody",
+    "file": "FL-right.jpg",
+    "article": "Ashley Moody",
+    "description": "American politician and attorney (born 1975)",
+    "license": "Public domain",
+    "author": "United States Senate Photography Service",
+    "source": "https://commons.wikimedia.org/wiki/File:Senator_Ashley_Moody_Official_Portrait.jpg"
+  },
+  "SC-left": {
+    "name": "Annie Andrews",
+    "file": "SC-left.png",
+    "article": "Annie Andrews (pediatrician)",
+    "description": "American physician and politician (born 1981)",
+    "license": "CC BY 4.0",
+    "author": "York County Democratic Party",
+    "source": "https://commons.wikimedia.org/wiki/File:Annie_Andrews_York_Town_(cropped_2).png"
+  },
+  "SC-right": {
+    "name": "Darline Graham",
+    "file": "SC-right.jpg",
+    "article": "Darline Graham",
+    "description": "American politician (born 1964)",
+    "license": "Public domain",
+    "author": "Rosa Pineda, United States Senate",
+    "source": "https://commons.wikimedia.org/wiki/File:Official_portrait_of_Darline_Graham,_member_of_the_United_States_Senate_from_South_Carolina_(2026).jpg"
+  },
+  "TX-left": {
+    "name": "James Talarico",
+    "file": "TX-left.jpg",
+    "article": "James Talarico",
+    "description": "American politician (born 1989)",
+    "license": "CC BY-SA 4.0",
+    "author": "Antonioaesparza",
+    "source": "https://commons.wikimedia.org/wiki/File:James_Talarico_Press_Conference_(cropped).jpg"
+  },
+  "TX-right": {
+    "name": "Ken Paxton",
+    "file": "TX-right.jpg",
+    "article": "Ken Paxton",
+    "description": "American politician and lawyer (born 1962)",
+    "license": "CC BY-SA 4.0",
+    "author": "Gage Skidmore",
+    "source": "https://commons.wikimedia.org/wiki/File:Ken_Paxton_-_55022425595_(cropped).jpg"
+  },
+  "MI-left": {
+    "name": "Abdul El-Sayed",
+    "file": "MI-left.jpg",
+    "article": "Abdul El-Sayed",
+    "description": "American politician and epidemiologist (born 1984)",
+    "license": "CC BY-SA 4.0",
+    "author": "Conlan Houston",
+    "source": "https://commons.wikimedia.org/wiki/File:Abdul_El-Sayed_meet-and-greet_by_Conlan_Houston_5_(cropped).jpg"
+  },
+  "MI-right": {
+    "name": "Mike Rogers",
+    "file": "MI-right.jpg",
+    "article": "Mike Rogers (Michigan politician)",
+    "description": "American politician (born 1963)",
+    "license": "Public domain",
+    "author": "P.J. Siquig",
+    "source": "https://commons.wikimedia.org/wiki/File:Mike_Rogers_in_November_2019_(3x4_cropped).jpg"
+  },
+  "ME-left": {
+    "name": "Troy Jackson",
+    "file": "ME-left.jpg",
+    "article": "Troy Jackson",
+    "description": "American politician and logger (born 1968)",
+    "license": "CC0",
+    "author": "ArenLeBrun",
+    "source": "https://commons.wikimedia.org/wiki/File:Troy_Jackson_in_the_Senate_Chamber_(cropped).jpg"
+  },
+  "ME-right": {
+    "name": "Susan Collins",
+    "file": "ME-right.jpg",
+    "article": "Susan Collins",
+    "description": "American politician (born 1952)",
+    "license": "Public domain",
+    "author": "U.S. Congress",
+    "source": "https://commons.wikimedia.org/wiki/File:Senator_Susan_Collins_2014_official_portrait_(1).jpg"
+  },
+  "KS-left": {
+    "name": "Adam Hamilton",
+    "file": "KS-left.jpg",
+    "article": "Adam Hamilton (pastor)",
+    "description": "American minister and U.S. Senate candidate (born 1964)",
+    "license": "CC0",
+    "author": "Leoniceno",
+    "source": "https://commons.wikimedia.org/wiki/File:Adam_Hamilton_campaign_rally,_Newton,_Kansas,_30_Oct_2026_(cropped).jpg"
+  },
+  "KS-right": {
+    "name": "Roger Marshall",
+    "file": "KS-right.jpg",
+    "article": "Roger Marshall",
+    "description": "American politician and physician (born 1960)",
+    "license": "Public domain",
+    "author": "US Senate Photography Office",
+    "source": "https://commons.wikimedia.org/wiki/File:Senator_Roger_Marshall_official_photo.jpg"
+  },
+  "IA-left": {
+    "name": "Josh Turek",
+    "file": "IA-left.jpg",
+    "article": "Josh Turek",
+    "description": "American politician and wheelchair basketball player",
+    "license": "Copyrighted free use",
+    "author": "Iowa General Assembly",
+    "source": "https://commons.wikimedia.org/wiki/File:Joshua_Turek_(cropped_2).jpg"
+  },
+  "IA-right": {
+    "name": "Ashley Hinson",
+    "file": "IA-right.jpg",
+    "article": "Ashley Hinson",
+    "description": "American politician and journalist (born 1983)",
+    "license": "Public domain",
+    "author": "Office of Congresswoman Ashley Hinson",
+    "source": "https://commons.wikimedia.org/wiki/File:Congresswoman_Ashley_Hinson_Official_portrait.jpg"
+  },
+  "NE-left": {
+    "name": "Dan Osborn",
+    "file": "NE-left.jpg",
+    "article": "Dan Osborn",
+    "description": "American labor union leader (born 1975)",
+    "license": "CC BY 4.0",
+    "author": "Ramseywill",
+    "source": "https://commons.wikimedia.org/wiki/File:Osborn_Headshot_2_(cropped).jpg"
+  },
+  "NE-right": {
+    "name": "Pete Ricketts",
+    "file": "NE-right.jpg",
+    "article": "Pete Ricketts",
+    "description": "American politician (born 1964)",
+    "license": "Public domain",
+    "author": "United States Congress",
+    "source": "https://commons.wikimedia.org/wiki/File:Sen._Pete_Ricketts_official_portrait,_118th_Congress.jpg"
+  },
+  "AK-left": {
+    "name": "Mary Peltola",
+    "file": "AK-left.jpg",
+    "article": "Mary Peltola",
+    "description": "American politician (born 1973)",
+    "license": "Public domain",
+    "author": "Leah Herman, House Creative Services",
+    "source": "https://commons.wikimedia.org/wiki/File:Mary_Peltola_Congressional_Member_Portrait_(2).jpeg"
+  },
+  "AK-right": {
+    "name": "Dan Sullivan",
+    "file": "AK-right.jpg",
+    "article": "Dan Sullivan (U.S. senator)",
+    "description": "American politician and lawyer (born 1964)",
+    "license": "Public domain",
+    "author": "United States Senate",
+    "source": "https://commons.wikimedia.org/wiki/File:Senator_Dan_Sullivan_official.jpg"
+  }
+}

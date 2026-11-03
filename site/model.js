@@ -52,12 +52,18 @@ export function probit(p) {
 // prior.sd points of error), blended with G. Elliott Morris's final forecast where the race has
 // one (race.forecast.p_left) — `weight` of his forecast, the rest the polls, averaged on the
 // normal-score scale so the result is again a margin and a spread.
-export function priorOf(race, weight = 0.7) {
+export function priorOf(race, weights = 0.7) {
   const sd = (race.prior && race.prior.sd) || 5.5;
   const zPolls = race.prior.margin / sd;
-  const f = race.forecast;
-  if (!f || f.p_left == null) return { margin: race.prior.margin, sd, from: "polls" };
-  const z = weight * probit(f.p_left) + (1 - weight) * zPolls;
+  // weights: a number (Morris's share, the rest polls) or {morris, ddhq, polls}; forecasts a race
+  // lacks are left out and the remaining shares scaled up.
+  const w = typeof weights === "number" ? { morris: weights, polls: 1 - weights } : { morris: 0.5, ddhq: 0.3, polls: 0.2, ...(weights || {}) };
+  const parts = [[w.polls || 0, zPolls]];
+  if (race.forecast && race.forecast.p_left != null) parts.push([w.morris || 0, probit(race.forecast.p_left)]);
+  if (race.ddhq && race.ddhq.p_left != null && w.ddhq) parts.push([w.ddhq, probit(race.ddhq.p_left)]);
+  if (parts.length === 1) return { margin: race.prior.margin, sd, from: "polls" };
+  const tot = parts.reduce((a, [x]) => a + x, 0) || 1;
+  const z = parts.reduce((a, [x, v]) => a + x * v, 0) / tot;
   return { margin: z * sd, sd, from: "blend" };
 }
 
@@ -148,6 +154,9 @@ export function estimate(baseline, counts, opts) {
   for (const w of work) {
     if (w.extra) continue;
     w.E = w.V * T;
+    // A statewide count that comes with an estimate of the expected vote (Decision Desk HQ's
+    // "est. N% in") uses that estimate rather than 2024 turnout.
+    if (statewideOnly && counts.expected_votes > 0) w.E = Math.max(counts.expected_votes, w.c / 0.995);
     if (w.complete) {
       w.E = w.c / (1 - late);
       w.e = 1 - late;
@@ -296,16 +305,20 @@ export function needle(race, baseline, live, analyst, cfg, now, nat = null) {
   const mk = [marketShare(kal), marketShare(poly)].filter((x) => x != null);
   const mAvg = mk.length ? mk.reduce((a, b) => a + b, 0) / mk.length : null;
   const counts = live && live.counts && live.counts.ok ? live.counts : null;
-  const base = priorOf(race, cfg.forecast_weight ?? 0.7);
+  const base = priorOf(race, cfg.forecast_weights || cfg.forecast_weight);
   const prior = adjustPrior(base, nat);
   let est = estimate(baseline, counts, { prior, turnout: race.turnout || cfg.turnout_default, late_share: race.late_share, rcv: race.rcv });
-  const noCount = !!race.no_live_count || (closed && !counts);
+  // The model's own chance (with Morris's live estimates), before any switch to market odds:
+  // what the Senate-control estimate uses.
+  const own = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
+  const model = { p: own.p, reported: est.mode === "model" || est.mode === "statewide" ? est.reported || 0 : 0 };
+  const noCount = !counts && (!!race.no_live_count || closed);
   if (noCount && closed && mAvg != null) {
     est = { ...est, mode: "market", p: mAvg, note: race.no_live_count ? "Market odds: no official live count" : "Market odds: official count unavailable" };
   }
   const b = blendLive(est.p, analyst, now, est.mode === "model" || est.mode === "statewide" ? est.reported : 0);
   if (b.w > 0) est = { ...est, p: b.p, analyst: { ...analyst, w: b.w } };
-  return { est, closed, kal, poly, mAvg, counts, prior, base };
+  return { est, model, closed, kal, poly, mAvg, counts, prior, base };
 }
 
 // All races at once: first each counted state's own evidence (from its own starting point), then
@@ -321,7 +334,7 @@ export function needles(races, baselines, liveRaces, analyst, cfg, now, clues = 
     const lr = (liveRaces && liveRaces[r.id]) || {};
     const counts = lr.counts && lr.counts.ok ? lr.counts : null;
     if (!counts || !baselines[r.id]) continue;
-    const base = priorOf(r, cfg.forecast_weight ?? 0.7);
+    const base = priorOf(r, cfg.forecast_weights || cfg.forecast_weight);
     const own = estimate(baselines[r.id], counts, { prior: base, turnout: r.turnout || cfg.turnout_default, late_share: r.late_share, rcv: r.rcv });
     evidence[r.id] = evidenceOf(own, base);
   }
@@ -331,5 +344,60 @@ export function needles(races, baselines, liveRaces, analyst, cfg, now, clues = 
     const an = analyst && analyst[r.id];
     out[r.id] = { ...needle(r, baselines[r.id], (liveRaces && liveRaces[r.id]) || {}, an, cfg, now, nat), nat };
   }
-  return { byRace: out, national: nationalShift(evidence), evidence };
+  const national = nationalShift(evidence);
+  return { byRace: out, national, evidence, control: senateControl(cfg, races, out, national) };
+}
+
+// Senate control. Each tracked race uses the model's own chance (never market odds); every other
+// seat up this year uses its forecast chance (cfg.senate.others), moved by the same national
+// shift. Polling misses are shared across races, so outcomes are added up over a range of
+// nationwide misses (NATIONAL_SHARE of each race's uncertainty) rather than as independent coin flips.
+// Republicans keep control with 50 seats (the vice president breaks ties); Democrats need 51.
+// An independent who caucuses with neither party (Osborn) can hold the balance.
+export function senateControl(cfg, races, byRace, national) {
+  const sen = cfg && cfg.senate;
+  if (!sen) return null;
+  const items = [];
+  const clampP = (p) => clamp(p, 1e-6, 1 - 1e-6);
+  for (const r of races) {
+    const n = byRace[r.id];
+    if (!n) continue;
+    const m = n.model || n.est;
+    items.push({ z: probit(clampP(m.p)), rho: NATIONAL_SHARE * (1 - clamp(m.reported || 0, 0, 1)), ind: r.left.party !== "D" });
+  }
+  const osd = sen.other_sd || 6;
+  for (const o of sen.others || []) {
+    const pr = adjustPrior({ margin: probit(clampP(o.p_left)) * osd, sd: osd }, national);
+    items.push({ z: pr.margin / pr.sd, rho: NATIONAL_SHARE, ind: o.left_party && o.left_party !== "D" });
+  }
+  const R0 = sen.not_up.R, D0 = sen.not_up.D, needR = sen.majority_r || 50, needD = sen.majority_d || 51;
+  let pR = 0, pD = 0, seatsD = 0, wsum = 0;
+  for (let g = -4.5; g <= 4.5001; g += 0.15) {
+    const w = Math.exp(-g * g / 2);
+    // dp[d][i]: chance of d Democratic and i independent wins among the races up
+    let dp = [[1]];
+    for (const it of items) {
+      const p = phi((it.z + Math.sqrt(it.rho) * g) / Math.sqrt(1 - it.rho));
+      const nx = Array.from({ length: dp.length + 1 }, () => []);
+      for (let d = 0; d < dp.length; d++) for (let i = 0; i < dp[d].length; i++) {
+        const v = dp[d][i];
+        if (!v) continue;
+        const [dd, ii] = it.ind ? [d, i + 1] : [d + 1, i];
+        nx[dd][ii] = (nx[dd][ii] || 0) + v * p;
+        nx[d][i] = (nx[d][i] || 0) + v * (1 - p);
+      }
+      dp = nx;
+    }
+    const up = items.length;
+    for (let d = 0; d < dp.length; d++) for (let i = 0; i < dp[d].length; i++) {
+      const v = dp[d][i] || 0;
+      if (!v) continue;
+      const D = D0 + d, R = R0 + (up - d - i);
+      if (R >= needR) pR += w * v; else if (D >= needD) pD += w * v;
+      seatsD += w * v * D;
+    }
+    wsum += w;
+  }
+  pR /= wsum; pD /= wsum;
+  return { d: pD, r: pR, balance: Math.max(0, 1 - pD - pR), seats_d: seatsD / wsum, races: items.length };
 }

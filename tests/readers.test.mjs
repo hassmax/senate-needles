@@ -165,3 +165,20 @@ test("Indiana House district totals from the results file", async () => {
   assert.deepEqual(indianaRace(json, bw), { left: 5000, right: 4000, other: 12, precincts: null });
   assert.equal(indianaRace(json, { ...bw, district: 7 }), null);
 });
+
+test("Decision Desk HQ vote updates and control statements from its Bluesky posts", async () => {
+  const { parseRaceUpdate, statedControl, ddhqCount } = await import("../scripts/sources/ddhq.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const u = parseRaceUpdate(cfg.races, "DDHQ Race Update (est. 34% in): Texas US Senate James Talarico (D): 1,234,567 (51.2%) Ken Paxton (R): 1,100,000 (45.6%) Ted Brown (L): 20,000 (1%) Follow more results here: votes.decisiondeskhq.com/races/1");
+  assert.deepEqual(u, { race: "TX", left: 1234567, right: 1100000, other: 20000, pct_in: 34 });
+  const ak = parseRaceUpdate(cfg.races, "DDHQ Race Update (est. 12% in): Alaska US Senate Mary Peltola (D): 30,000 (48%) Dan Sullivan (R): 29,000 (46%) Daniel J. Sullivan Jr. (N): 900 (1%)");
+  assert.equal(ak.other, 900);
+  assert.equal(parseRaceUpdate(cfg.races, "DDHQ Race Update (est. 5% in): Arkansas US Senate Tom Cotton (R): 30,000 (62%)"), null);
+  assert.equal(parseRaceUpdate(cfg.races, "DDHQ Race Update (est. 1% in): Kansas US Senate Republican Primary Roger Marshall (R): 3 (100%)"), null);
+  assert.equal(statedControl("Our final forecast gives Democrats an 84% probability of winning the House, with a seat total of 241. In the Senate, Democrats have a 64% probability of winning a majority of seats."), 0.64);
+  assert.equal(statedControl("In our forecast, the GOP has a 52% chance at a Senate majority, while Democrats have a 48% shot."), 0.48);
+  assert.equal(statedControl("Talarico has a 60% win probability of winning the Texas Senate race"), null);
+  const c = ddhqCount({ ...u, time: "2026-11-04T01:00:00Z", url: "https://bsky.app/x" });
+  assert.equal(c.ok, true);
+  assert.ok(Math.abs(c.expected_votes - 2354567 / 0.34) < 1);
+});

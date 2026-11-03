@@ -5,7 +5,7 @@ const cfg = JSON.parse(fs.readFileSync("config/races.json", "utf8"));
 const now = Date.now();
 const swing = { OH: 0.13, FL: 0.06, SC: 0.17, TX: 0.15, MI: 0.07, KS: 0.16, IA: 0.12, NE: 0.2, AK: 0.16 };
 const frac = { OH: 0.72, FL: 0.93, SC: 0.55, TX: 0.38, MI: 0.2, KS: 0.08, IA: 0, NE: 0, AK: 0 };
-const live = { generated: new Date(now).toISOString(), build: null, races: {}, control: { kalshi: { d: 0.66, r: 0.35 } }, feed: [], health: [{ name: "demo", ok: true }] };
+const live = { generated: new Date(now).toISOString(), build: null, races: {}, control: { kalshi: { d: 0.66, r: 0.35, url: "https://kalshi.com" }, polymarket: { d: 0.72, r: 0.28, url: "https://polymarket.com" }, ddhq: { d: 0.64, r: 0.36, time: new Date(now - 4 * 3600e3).toISOString(), url: "https://bsky.app", by: "Decision Desk HQ" } }, feed: [], health: [{ name: "demo", ok: true }] };
 const history = {};
 let seed = 7;
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -38,6 +38,12 @@ for (const r of cfg.races) {
     { id: `n${r.id}`, kind: "news", race: r.id, time: new Date(now - rnd() * 3600e3).toISOString(), outlet: "Example News", text: `Demo headline about the ${r.state} Senate race`, url: "https://news.google.com" },
     { id: `p${r.id}`, kind: "post", via: rnd() < 0.5 ? "search" : "account", race: r.id, time: new Date(now - rnd() * 3600e3).toISOString(), author: "Demo Analyst", handle: "example.com", text: `Demo post: early returns in ${r.state} look different from 2024 in the suburbs.`, url: "https://bsky.app" },
   );
+}
+{
+  const h = [];
+  let d = 0.63;
+  for (let i = 0; i < 90; i++) { d = Math.min(0.97, Math.max(0.03, d + (rnd() - 0.48) * 0.03)); h.push([Math.floor(now / 1000) - (90 - i) * 120, d, Math.max(0, 0.99 - d), 51]); }
+  history.control = h;
 }
 live.feed.push({ id: "callFL", kind: "post", via: "account", race: "FL", call: true, time: new Date(now - 20 * 60e3).toISOString(), author: "The Associated Press", handle: "apnews.com", text: "BREAKING (demo): Republican Ashley Moody wins election to U.S. Senate in Florida.", url: "https://bsky.app" });
 live.feed.sort((a, b) => Date.parse(b.time) - Date.parse(a.time));

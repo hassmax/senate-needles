@@ -121,3 +121,25 @@ test("a Democratic washout in one state moves the others toward Republicans", as
   // Florida's own needle is judged on its own count, not pushed again by itself.
   assert.equal(res.byRace.FL.nat.used.length, 0);
 });
+
+test("starting point blends Morris, Decision Desk HQ and polls; Senate control adds up", async () => {
+  const { priorOf, phi, needles, senateControl } = await import("../site/model.js");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const tx = cfg.races.find((r) => r.id === "TX"), fl = cfg.races.find((r) => r.id === "FL");
+  const p = (pr) => phi(pr.margin / pr.sd);
+  // TX sits between Morris (65%) and DDHQ (60%); FL has no DDHQ number and uses Morris and polls.
+  assert.ok(p(priorOf(tx, cfg.forecast_weights)) > 0.6 && p(priorOf(tx, cfg.forecast_weights)) < 0.66);
+  assert.equal(priorOf(fl, cfg.forecast_weights).from, "blend");
+  assert.equal(priorOf({ prior: { margin: 1, sd: 5 } }, cfg.forecast_weights).from, "polls");
+  const bl = Object.fromEntries(cfg.races.map((r) => [r.id, JSON.parse(fs.readFileSync(new URL(`../site/data/baseline/${r.id}.json`, import.meta.url)))]));
+  const N = needles(cfg.races, bl, {}, {}, cfg, Date.parse("2026-11-03T21:00:00Z"), {});
+  const c = N.control;
+  assert.equal(c.races, 35);
+  assert.ok(Math.abs(c.d + c.r + c.balance - 1) < 1e-9);
+  assert.ok(c.d > 0.4 && c.d < 0.85, `control ${c.d}`);
+  // Every tracked race settled for Republicans: Democrats could only reach 51 by also winning
+  // several seats assumed safe, so their chance is tiny; settled for Democrats, it is near certain.
+  const all = (p) => Object.fromEntries(cfg.races.map((r) => [r.id, { model: { p, reported: 1 } }]));
+  assert.ok(senateControl(cfg, cfg.races, all(0.0001), N.national).d < 0.02);
+  assert.ok(senateControl(cfg, cfg.races, all(0.9999), N.national).d > 0.95);
+});

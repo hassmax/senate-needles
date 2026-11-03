@@ -69,6 +69,21 @@ export async function kalshiControl() {
   return out;
 }
 
+export async function polymarketControl(slug = "which-party-will-win-the-senate-in-2026") {
+  const j = await getJSON(`${GAMMA}/events?slug=${encodeURIComponent(slug)}`);
+  const ev = Array.isArray(j) ? j[0] : null;
+  if (!ev) throw new Error("no Polymarket Senate-control market");
+  const out = { d: null, r: null, url: `https://polymarket.com/event/${slug}` };
+  for (const m of ev.markets || []) {
+    const label = `${m.groupItemTitle || ""} ${m.question || ""}`;
+    const p = polyPrice(m);
+    if (p == null) continue;
+    if (/democrat/i.test(label)) out.d = p; else if (/republican/i.test(label)) out.r = p;
+  }
+  if (out.d == null && out.r == null) throw new Error("Polymarket Senate-control market has no prices");
+  return out;
+}
+
 function polyPrice(m) {
   let prices = m.outcomePrices;
   try { if (typeof prices === "string") prices = JSON.parse(prices); } catch { prices = null; }

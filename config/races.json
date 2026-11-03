@@ -49,6 +49,12 @@
         "p_left": 0.661,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.55,
+        "as_of": "2026-10-28",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Ohio 55% D",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myx6lbizcs2l"
       }
     },
     {
@@ -138,7 +144,13 @@
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
       },
-      "watch": "Axios: a Graham loss would likely sink the Republican Senate majority."
+      "watch": "Axios: a Graham loss would likely sink the Republican Senate majority.",
+      "ddhq": {
+        "p_left": 0.35,
+        "as_of": "2026-10-28",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: South Carolina 65% R",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myx6lbizcs2l"
+      }
     },
     {
       "id": "TX",
@@ -180,7 +192,13 @@
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
       },
-      "watch": "Axios: if Paxton is holding on, Republicans still have a path to keeping the Senate."
+      "watch": "Axios: if Paxton is holding on, Republicans still have a path to keeping the Senate.",
+      "ddhq": {
+        "p_left": 0.6,
+        "as_of": "2026-11-03",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: final forecast: Talarico 60%",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mzgoudlbtc2a"
+      }
     },
     {
       "id": "MI",
@@ -221,6 +239,12 @@
         "p_left": 0.7842,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.69,
+        "as_of": "2026-10-28",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Michigan 69% D",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myx6lbizcs2l"
       }
     },
     {
@@ -264,6 +288,12 @@
         "p_left": 0.7874,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.56,
+        "as_of": "2026-10-28",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Maine 56% D; moved to Lean D on Oct. 31 without a new number",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myx6lbizcs2l"
       }
     },
     {
@@ -306,6 +336,12 @@
         "p_left": 0.6478,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.51,
+        "as_of": "2026-11-02",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Hamilton 51% (final update called it barely more than a coin flip)",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mzdv2peav22e"
       }
     },
     {
@@ -347,6 +383,12 @@
         "p_left": 0.4964,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.46,
+        "as_of": "2026-10-28",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Iowa 54% R",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myx6lbizcs2l"
       }
     },
     {
@@ -393,6 +435,12 @@
         "p_left": 0.1702,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.27,
+        "as_of": "2026-10-26",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Ricketts 73%",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mysgzegdtk2l"
       }
     },
     {
@@ -448,10 +496,15 @@
         "p_left": 0.6804,
         "source": "G. Elliott Morris, final forecast",
         "as_of": "2026-11-03"
+      },
+      "ddhq": {
+        "p_left": 0.61,
+        "as_of": "2026-11-02",
+        "source": "Decision Desk HQ forecast as posted on Bluesky: Peltola 61%",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mzeauwtvk22e"
       }
     }
   ],
-  "forecast_weight": 0.7,
   "history_since": "2026-11-03T20:00:00Z",
   "bellwethers": {
     "_note": "Early-clue races: Axios's list (Hans Nichols) plus Kentucky's Senate race and Indiana's 1st district, the first states to close: states where voting ends early and counting is quick. Each one's count against 'expected' (left minus right, points) feeds the national shift that moves every Senate needle. 'expected' = 2024 presidential margin + the forecast national swing (D+8.5 vs. 2024, from a D+7 House vote) + about 2 points for an incumbent. Edit if better numbers turn up.",
@@ -614,6 +667,183 @@
         "expected": -5.5,
         "basis": "Trump +12 in 2024 (Axios); forecast swing D+8.5; McGuire incumbency -2",
         "watch": "A Democratic flip of this Trump +12 seat points to a great night for Democrats."
+      }
+    ]
+  },
+  "forecast_weights": {
+    "_note": "Each starting point blends G. Elliott Morris's final forecast, Decision Desk HQ's last stated forecast and the polling average (on the probit scale). A race with no DDHQ number uses Morris and polls only, scaled up.",
+    "morris": 0.5,
+    "ddhq": 0.3,
+    "polls": 0.2
+  },
+  "senate": {
+    "_note": "Senate control (site/model.js senateControl). 65 seats aren't up in 2026: 31 Republican, 34 Democratic (including King and Sanders, independents who caucus with Democrats). Republicans keep control with 50 seats (Vice President Vance breaks ties); Democrats need 51. Osborn (Nebraska, independent) caucuses with neither party, so if he wins and the count is 50 D, 49 R, he holds the balance. The 25 seats up that aren't tracked here use the chances below, moved by the same national shift as the needles.",
+    "not_up": {
+      "R": 31,
+      "D": 34
+    },
+    "majority_r": 50,
+    "majority_d": 51,
+    "other_sd": 6,
+    "ddhq_final": {
+      "p_d": 0.64,
+      "seats_d": 52,
+      "as_of": "2026-11-03T17:38:00Z",
+      "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mzgexiettk2a",
+      "source": "Decision Desk HQ final forecast (Bluesky)"
+    },
+    "others": [
+      {
+        "state": "North Carolina",
+        "held": "R",
+        "p_left": 0.86,
+        "source": "DDHQ forecast, Oct. 23 (Bluesky)",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3mykrwwkw522a"
+      },
+      {
+        "state": "Minnesota",
+        "held": "D",
+        "p_left": 0.81,
+        "source": "DDHQ forecast, Oct. 21 (Bluesky)",
+        "url": "https://bsky.app/profile/decisiondeskhq.bsky.social/post/3myfroy2zic24"
+      },
+      {
+        "state": "Georgia",
+        "held": "D",
+        "p_left": 0.8,
+        "source": "assumed: not among DDHQ's competitive Senate races on Oct. 28"
+      },
+      {
+        "state": "New Hampshire",
+        "held": "D",
+        "p_left": 0.8,
+        "source": "assumed: not among DDHQ's competitive Senate races on Oct. 28"
+      },
+      {
+        "state": "Colorado",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Delaware",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Illinois",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Massachusetts",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "New Jersey",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "New Mexico",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Oregon",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Rhode Island",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Virginia",
+        "held": "D",
+        "p_left": 0.99,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Alabama",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Arkansas",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Idaho",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Kentucky",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Louisiana",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Mississippi",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Montana",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Oklahoma",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "South Dakota",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Tennessee",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "West Virginia",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
+      },
+      {
+        "state": "Wyoming",
+        "held": "R",
+        "p_left": 0.01,
+        "source": "assumed safe"
       }
     ]
   }

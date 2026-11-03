@@ -1,5 +1,5 @@
 {
-  "_note": "Bluesky accounts read every update. Handles that are a web domain (apnews.com) are verified by Bluesky. 'calls' names the organization whose posts may set a race call; 'all_election' keeps any election post, not only ones naming a race. 'featured': accounts whose stated win probabilities are blended into the needles (their posts aren't shown separately).",
+  "_note": "Bluesky accounts read every update. Handles that are a web domain (apnews.com) are verified by Bluesky. 'calls' names the organization whose posts may set a race call; 'all_election' keeps any election post, not only ones naming a race. 'featured': accounts whose stated win probabilities are blended into the needles (their posts aren't shown separately). 'ddhq': Decision Desk HQ's Bluesky account, whose vote updates stand in for states whose own results can't be read and whose stated Senate-control chance is shown at the top (scripts/sources/ddhq.mjs). Its website is never read: its terms forbid scraping.",
   "bluesky": {
     "min_followers": 10000,
     "queries": [
@@ -13,6 +13,11 @@
         "name": "The Associated Press",
         "calls": "AP",
         "all_election": true
+      },
+      {
+        "handle": "decisiondeskhq.bsky.social",
+        "name": "Decision Desk HQ",
+        "calls": "DDHQ"
       },
       {
         "handle": "nytimes.com",
@@ -78,5 +83,8 @@
       "name": "G. Elliott Morris",
       "about": "Strength In Numbers; FiftyPlusOne forecast"
     }
-  ]
+  ],
+  "ddhq": {
+    "handle": "decisiondeskhq.bsky.social"
+  }
 }

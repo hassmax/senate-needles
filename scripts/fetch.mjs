@@ -4,7 +4,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { allCounts, allBellwethers } from "./sources/states.mjs";
-import { allMarkets, kalshiControl } from "./sources/markets.mjs";
+import { allMarkets, kalshiControl, polymarketControl } from "./sources/markets.mjs";
+import { ddhq, ddhqCount } from "./sources/ddhq.mjs";
 import { bluesky, news, detectCall, featured, liveEstimates } from "./sources/social.mjs";
 import { needles } from "../site/model.js";
 import { log } from "./lib.mjs";
@@ -32,10 +33,13 @@ const safe = async (label, fn, fallback) => {
   try { return await withTimeout(fn(), 50000, label); } catch (e) { log(`[${label}] ${e.message}`); health.push({ name: label, ok: false, detail: e.message }); return fallback; }
 };
 
-const [counts, markets, control, posts, headlines, stars] = await Promise.all([
+const since = config.history_since ? Date.parse(config.history_since) / 1000 : 0;
+const [counts, markets, control, polyControl, dd, posts, headlines, stars] = await Promise.all([
   safe("counts", () => allCounts(races, prev.races, cache.counts, health), {}),
   safe("markets", () => allMarkets(races, cache.markets, health), {}),
   safe("control", () => kalshiControl(), prev.control && prev.control.kalshi),
+  safe("control polymarket", () => polymarketControl(), prev.control && prev.control.polymarket),
+  safe("ddhq", () => ddhq(feedCfg.ddhq, races, prev.ddhq, since * 1000, health), prev.ddhq || { counts: {} }),
   safe("bluesky", () => bluesky(feedCfg.bluesky || {}, races, health, cache.social), []),
   safe("news", () => news(races, health), []),
   safe("featured", () => featured(feedCfg.featured, races, health), prev.featured || []),
@@ -75,12 +79,20 @@ for (const i of feed) if (Object.values(calls).some((c) => c.url === i.url)) i.c
 const analyst = { ...(prev.analyst || {}), ...liveEstimates(races, stars) };
 for (const k of Object.keys(analyst)) if (Date.now() - Date.parse(analyst[k].time) > 4 * 3600e3) delete analyst[k];
 for (const [k, v] of Object.entries(analyst)) log(`[analyst] ${k}: ${v.by} ${Math.round(v.p_left * 100)}% for the first-listed candidate (${v.url})`);
-const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null }, analyst, clues, feed, health };
+// Senate control odds shown at the top: the two markets and Decision Desk HQ's latest stated
+// chance (its final forecast, config/races.json senate.ddhq_final, until it posts another).
+const ddFinal = config.senate && config.senate.ddhq_final;
+const ddControl = (dd && dd.control) || (ddFinal ? { d: ddFinal.p_d, r: 1 - ddFinal.p_d, time: ddFinal.as_of, url: ddFinal.url, by: "Decision Desk HQ" } : null);
+const out = { generated: new Date().toISOString(), build: process.env.BUILD_SHA || null, races: {}, control: { kalshi: control || null, polymarket: polyControl || null, ddhq: ddControl }, ddhq: dd, analyst, clues, feed, health };
 for (const r of races) {
   const m = markets[r.id] || {};
   const pm = (prev.races && prev.races[r.id] && prev.races[r.id].markets) || {};
+  // States whose own results can't be read use Decision Desk HQ's latest posted update instead.
+  let cnt = counts[r.id] || null;
+  const du = dd && dd.counts && dd.counts[r.id];
+  if (du && !(cnt && cnt.ok)) cnt = ddhqCount(du);
   out.races[r.id] = {
-    counts: counts[r.id] || null,
+    counts: cnt,
     markets: { kalshi: m.kalshi || pm.kalshi || null, polymarket: m.polymarket || pm.polymarket || null },
     call: calls[r.id] || null,
   };
@@ -88,7 +100,6 @@ for (const r of races) {
 
 // History: what the needle shows (site/model.js needle), once a minute at most.
 const now = Math.floor(Date.now() / 1000);
-const since = config.history_since ? Date.parse(config.history_since) / 1000 : 0;
 const baselines = Object.fromEntries(races.map((r) => [r.id, readJSON(path.join(root, `site/data/baseline/${r.id}.json`))]));
 const N = needles(races, baselines, out.races, analyst, config, Date.now(), clues);
 if (N.national.used.length) log(`[national] counts so far run ${(N.national.shift * 100).toFixed(1)} pts from expectations (positive = Democrats), from ${N.national.used.join(", ")}`);
@@ -99,6 +110,14 @@ for (const r of races) {
   const point = [now, +e.p.toFixed(4), +(e.margin * 100).toFixed(2), +(e.reported || 0).toFixed(3)];
   if (!last || now - last[0] >= 60 || Math.abs(last[1] - point[1]) > 0.002) h.push(point);
   if (h.length > 3000) h.splice(0, h.length - 3000);
+}
+if (N.control) {
+  const h = (history.control = (history.control || []).filter((x) => x[0] >= since));
+  const last = h[h.length - 1], c = N.control;
+  const point = [now, +c.d.toFixed(4), +c.r.toFixed(4), +c.seats_d.toFixed(2)];
+  if (!last || now - last[0] >= 60 || Math.abs(last[1] - point[1]) > 0.002) h.push(point);
+  if (h.length > 3000) h.splice(0, h.length - 3000);
+  log(`[control] Democrats ${(c.d * 100).toFixed(1)}%, Republicans ${(c.r * 100).toFixed(1)}%, balance ${(c.balance * 100).toFixed(1)}%, ${c.seats_d.toFixed(1)} Democratic seats expected`);
 }
 
 fs.mkdirSync(OUT, { recursive: true });

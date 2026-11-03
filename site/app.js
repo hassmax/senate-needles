@@ -184,7 +184,7 @@ function updateCard(race, card) {
     card.band = [phi((est.margin - 0.25 * est.sd) / est.sd), phi((est.margin + 0.25 * est.sd) / est.sd)];
   } else card.band = [est.p, est.p];
   if (!jitterOn()) setArm(card, est.p);
-  const start = priorOf(race, S.config.forecast_weight);
+  const start = priorOf(race, S.config.forecast_weights || S.config.forecast_weight);
   const marks = [
     { p: phi(start.margin / start.sd), label: "", hollow: true, title: "Starting point before the count" },
     { p: marketShare(v.kal), label: "K", title: "Kalshi market price" },
@@ -269,7 +269,9 @@ function updateCard(race, card) {
   const notes = [];
   if (race.watch) notes.push(race.watch);
   if (race.count_note) notes.push(race.count_note);
-  if (race.no_live_count) notes.push(race.no_live_count);
+  const viaDD = lr.counts && lr.counts.via === "ddhq" && lr.counts.ok;
+  if (viaDD) notes.push(`The count here is Decision Desk HQ's latest posted update (it estimated ${lr.counts.pct_in}% counted at ${fmtTime(lr.counts.updated)}), because ${race.state}'s own results site can't be read.`);
+  else if (race.no_live_count) notes.push(race.no_live_count);
   if (race.baseline_note) notes.push(race.baseline_note);
   if (est.unmatched) notes.push(`${est.unmatched} reporting areas couldn't be matched to 2024 counties; they are judged against the statewide 2024 result.`);
   if (lr.counts && !lr.counts.ok && closed && !race.no_live_count) notes.push(`Official count not loading: ${lr.counts.error || "no data yet"}.`);
@@ -278,7 +280,8 @@ function updateCard(race, card) {
   card.note.textContent = notes.join(" ");
 
   // Sources
-  card.sources.replaceChildren("Official results: ", el("a", { href: race.results_page, target: "_blank", rel: "noopener", text: lr.counts && lr.counts.source || race.state }));
+  card.sources.replaceChildren("Official results: ", el("a", { href: race.results_page, target: "_blank", rel: "noopener", text: viaDD ? race.state : lr.counts && lr.counts.source || race.state }));
+  if (viaDD) card.sources.append(" · Count: ", el("a", { href: lr.counts.url, target: "_blank", rel: "noopener", text: "Decision Desk HQ update" }));
 }
 
 function marginText(race, m) {
@@ -290,19 +293,20 @@ function marginText(race, m) {
 // a 0/50/100% scale, hour marks in Eastern time, the polls-close time, and today's values at the
 // right end of each line.
 const HOUR = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric" });
-function drawTrend(fig, pts, race, est) {
+function drawTrend(fig, pts, race, est, opt = {}) {
   fig.replaceChildren();
   const now = Date.now() / 1000;
   const data = pts.filter((x) => x && isFinite(x[1]));
   // The last point is what the needle shows right now.
-  if (!data.length || now - data[data.length - 1][0] > 30) data.push([now, est.p]);
+  if (!data.length || now - data[data.length - 1][0] > 30) data.push(opt.now || [now, est.p]);
+  const lv = (pt) => pt[1], rv = opt.right || ((pt) => 1 - pt[1]);
   const L = partyVar(race.left.party), R = partyVar(race.right.party);
-  fig.append(el("figcaption", { text: "Chance of winning over time" }));
+  fig.append(el("figcaption", { text: opt.caption || "Chance of winning over time" }));
   if (data.length < 3) {
     fig.append(el("p", { class: "trend-empty", text: "The trend line fills in as updates come in." }));
     return;
   }
-  const W = 320, H = 132, x0 = 34, x1 = 230, y0 = 10, y1 = 104;
+  const W = opt.W || 320, H = 132, x0 = 34, x1 = W - 90, y0 = 10, y1 = 104;
   const t0 = data[0][0], t1 = Math.max(data[data.length - 1][0], t0 + 600);
   const X = (t) => x0 + ((t - t0) / (t1 - t0)) * (x1 - x0);
   const Y = (p) => y1 - p * (y1 - y0);
@@ -334,25 +338,25 @@ function drawTrend(fig, pts, race, est) {
   }
   // The two lines
   const line = (f, color) => svgEl("polyline", {
-    points: data.map(([t, p]) => `${X(t).toFixed(1)},${Y(f(p)).toFixed(1)}`).join(" "),
+    points: data.map((pt) => `${X(pt[0]).toFixed(1)},${Y(f(pt)).toFixed(1)}`).join(" "),
     fill: "none", stroke: `var(--${color})`, "stroke-width": "2.2", "stroke-linejoin": "round", "stroke-linecap": "round",
   });
   const lead = est.p >= 0.5;
   // Draw the trailing candidate first so the leader's line sits on top.
-  const lines = [[(p) => p, L], [(p) => 1 - p, R]];
+  const lines = [[lv, L], [rv, R]];
   for (const [f, c] of lead ? lines.reverse() : lines) svg.append(line(f, c));
   // End dots and labels, nudged apart when the race is close
-  const pl = data[data.length - 1][1], ex = X(data[data.length - 1][0]);
-  let yl = Y(pl), yr = Y(1 - pl);
+  const lastPt = data[data.length - 1], pl = lv(lastPt), pr = rv(lastPt), ex = X(lastPt[0]);
+  let yl = Y(pl), yr = Y(pr);
   if (Math.abs(yl - yr) < 14) { const mid = (yl + yr) / 2, d = yl <= yr ? -7 : 7; yl = mid + d; yr = mid - d; }
-  for (const [p, y, c, name] of [[pl, yl, L, race.left.last], [1 - pl, yr, R, race.right.last]]) {
+  for (const [p, y, c, name] of [[pl, yl, L, race.left.last], [pr, yr, R, race.right.last]]) {
     svg.append(svgEl("circle", { cx: ex, cy: Y(p), r: 3.2, fill: `var(--${c})` }));
     const t = svgEl("text", { x: ex + 7, y: y + 4, class: "trend-end", fill: `var(--${c})` });
     t.textContent = `${pct(p)}% ${name}`;
     svg.append(t);
   }
-  const first = data[0][1];
-  svg.setAttribute("aria-label", `${race.left.last}'s chance went from ${pct(first)}% at ${fmtTime(new Date(t0 * 1000))} to ${pct(pl)}% now; ${race.right.last}'s from ${pct(1 - first)}% to ${pct(1 - pl)}%.`);
+  const first = data[0];
+  svg.setAttribute("aria-label", `${race.left.last}'s chance went from ${pct(lv(first))}% at ${fmtTime(new Date(t0 * 1000))} to ${pct(pl)}% now; ${race.right.last}'s from ${pct(rv(first))}% to ${pct(pr)}%.`);
   fig.append(svg);
 }
 
@@ -381,16 +385,52 @@ function setupJitter() {
   setInterval(jitterTick, 400);
 }
 
+// ---------- Senate control ----------
+const CONTROL_SIDES = { left: { party: "D", last: "Democrats" }, right: { party: "R", last: "Republicans" } };
+function renderControl() {
+  const box = document.getElementById("control");
+  const c = S.N && S.N.control;
+  if (!c) { box.hidden = true; return; }
+  box.hidden = false;
+  box.replaceChildren();
+  const main = el("div", { class: "control-main" });
+  main.append(el("h2", { text: "Senate control" }));
+  const fav = c.d >= c.r ? ["dem", "Democrats", c.d] : ["rep", "Republicans", c.r];
+  main.append(el("div", { class: "control-head" },
+    el("span", { class: "big num", style: `color:var(--${fav[0]})`, text: `${pct(fav[2])}%` }),
+    el("span", { class: "who" }, el("b", { style: `color:var(--${fav[0]})`, text: fav[1] }), el("span", { class: "lean", text: "chance of a majority, this site's estimate" }))));
+  const parts = [el("b", { class: "dem", text: `Democrats ${pct(c.d)}%` }), " · ", el("b", { class: "rep", text: `Republicans ${pct(c.r)}%` })];
+  if (c.balance >= 0.005) parts.push(" · ", el("b", { class: "ind", text: `Osborn holds the balance ${pct(c.balance)}%` }));
+  main.append(el("div", { class: "control-line" }, ...parts, el("span", { class: "muted", text: ` · about ${Math.round(c.seats_d)} Democratic seats expected` })));
+  const fig = el("figure", { class: "trend control-trend" });
+  const now = Date.now() / 1000;
+  drawTrend(fig, (S.history && S.history.control) || [], CONTROL_SIDES, { p: c.d }, {
+    W: matchMedia("(max-width: 600px)").matches ? 360 : 520, caption: "Chance of a majority over the night", now: [now, c.d, c.r], right: (pt) => pt[2] ?? 1 - pt[1],
+  });
+  main.append(fig);
+
+  const side = el("div", { class: "control-others" }, el("h3", { text: "Others' odds" }));
+  const ctl = (S.live && S.live.control) || {};
+  const row = (label, o, sub) => {
+    if (!o || o.d == null) return;
+    const d = o.r != null ? o.d / ((o.d + o.r) || 1) : o.d;
+    const kids = [el("span", { class: "src", text: label }),
+      el("b", { class: "dem", text: `D ${pct(d)}%` }), el("b", { class: "rep", text: `R ${pct(1 - d)}%` })];
+    if (sub) kids.push(el("span", { class: "sub", text: sub }));
+    side.append(o.url ? el("a", { class: "odds", href: o.url, target: "_blank", rel: "noopener" }, ...kids) : el("div", { class: "odds" }, ...kids));
+  };
+  row("Kalshi", ctl.kalshi, "market");
+  row("Polymarket", ctl.polymarket, "market");
+  row("Decision Desk HQ", ctl.ddhq, ctl.ddhq && ctl.ddhq.time ? `forecast, posted ${fmtTime(ctl.ddhq.time)} ET` : "forecast");
+  if (side.childNodes.length === 1) side.append(el("p", { class: "muted", text: "Not available yet." }));
+  side.append(el("p", { class: "fine", text: "Markets are shown for comparison and are not part of this site's estimate. Decision Desk HQ's forecast is part of each race's starting point." }));
+  box.append(main, side);
+}
+
 // ---------- summary ----------
 function renderSummary() {
   const box = document.getElementById("summary");
   box.replaceChildren();
-  const ctl = S.live && S.live.control && S.live.control.kalshi;
-  if (ctl && ctl.d != null) {
-    box.append(el("div", { class: "item" }, "Senate control, Kalshi: ",
-      el("b", { class: "dem", text: `Democrats ${pct(ctl.d / ((ctl.d + ctl.r) || 1))}%` }), " · ",
-      el("b", { class: "rep", text: `Republicans ${pct(ctl.r / ((ctl.d + ctl.r) || 1))}%` })));
-  }
   const nat = S.N && S.N.national;
   if (nat && nat.used.length) {
     const pts = nat.shift * 100;
@@ -497,46 +537,9 @@ async function refresh() {
   renderStatus();
 }
 
-// ---------- early clues (House bellwethers) ----------
-function renderClues() {
-  const box = document.getElementById("clues");
-  const bws = (S.config.bellwethers && S.config.bellwethers.list) || [];
-  if (!bws.length) { box.hidden = true; return; }
-  box.hidden = false;
-  box.replaceChildren(el("div", { class: "clues-head" }, el("b", { text: "Early clues" }),
-    el("span", { text: ` · House races that report early, from Axios's list by Hans Nichols. They move every needle below.` })));
-  const row = el("div", { class: "clues-row" });
-  const ev = (S.N && S.N.evidence) || {};
-  for (const bw of bws) {
-    const c = S.live && S.live.clues && S.live.clues[bw.id];
-    const e = ev[bw.id];
-    const exp = bw.expected >= 0 ? `${bw.left.last} +${bw.expected.toFixed(1)}` : `${bw.right.last} +${(-bw.expected).toFixed(1)}`;
-    const chip = el("div", { class: "clue", title: `${bw.watch} Expected ${exp}: ${bw.basis}.` });
-    chip.append(el("div", { class: "clue-name", text: `${bw.id} ` }, el("span", { text: `${bw.left.last} (D) v. ${bw.right.last} (R)` })));
-    if (c && c.ok) {
-      const tot = c.left + c.right + c.other, m = (c.left - c.right) / tot * 100;
-      const f = c.precincts && c.precincts[1] ? c.precincts[0] / c.precincts[1] : bw.expected_votes ? Math.min(1, tot / bw.expected_votes) : null;
-      if (!c.precincts && bw.expected_votes) c.unitsAre = "expected vote";
-      chip.append(el("div", { class: "clue-now" },
-        el("b", { style: `color:var(--${m >= 0 ? "dem" : "rep"})`, text: `${m >= 0 ? bw.left.last : bw.right.last} +${Math.abs(m).toFixed(1)}` }),
-        f != null ? ` · ${Math.round(f * 100)}% of ${c.unitsAre || "precincts"} in` : ""));
-      const diff = m - bw.expected;
-      chip.append(el("div", { class: "clue-vs", text: e
-        ? `${Math.abs(diff).toFixed(1)} pts ${diff >= 0 ? "better for Democrats" : "better for Republicans"} than expected (${exp})`
-        : `Too early to read · expected ${exp}` }));
-    } else {
-      const closed = Date.now() >= Date.parse(bw.polls_close);
-      chip.append(el("div", { class: "clue-now", text: closed ? "Polls closed · waiting for votes" : `Polls close ${fmtTime(bw.polls_close)} ET` }));
-      chip.append(el("div", { class: "clue-vs", text: `Expected ${exp}` }));
-    }
-    row.append(chip);
-  }
-  box.append(row);
-}
-
 function renderAll() {
   computeAll();
-  renderClues();
+  renderControl();
   for (const race of S.config.races) updateCard(race, S.cards[race.id]);
   renderSummary();
   renderFeed();

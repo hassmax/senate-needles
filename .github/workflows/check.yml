@@ -22,6 +22,11 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/probe.mjs ${{ inputs.groups }}
+      - name: Alaska certificate chain
+        continue-on-error: true
+        run: |
+          echo | openssl s_client -connect www.elections.alaska.gov:443 -servername www.elections.alaska.gov -showcerts 2>/dev/null | grep -E "s:|i:|BEGIN" | head -20
+          echo | openssl s_client -connect www.elections.alaska.gov:443 -servername www.elections.alaska.gov 2>/dev/null | openssl x509 -noout -text | grep -A2 "Authority Information Access" || true
 
   dry-run:
     runs-on: ubuntu-24.04

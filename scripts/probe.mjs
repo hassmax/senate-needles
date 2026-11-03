@@ -5,6 +5,17 @@ const ORIGIN = "https://hassmax.github.io";
 const UA = "senate-needles/1.0 (election-night results check)";
 
 const groups = {
+  extra: [
+    "https://www.enr-scvotes.org/SC/",
+    ...["125168", "124705", "124359"].flatMap((e) => [`https://www.enr-scvotes.org/SC/${e}/current_ver.txt`, `https://results.enr.clarityelections.com/SC/${e}/current_ver.txt`]),
+    "https://results.enr.clarityelections.com/IA/",
+    "https://results.enr.clarityelections.com/KS/",
+    "https://liveresults.ohiosos.gov/Scripts/site.js",
+    "https://electionresults.nebraska.gov/ResultsMedia.aspx",
+    "https://results.elections.myflorida.com/ElectionRaces.asp?ElectionDate=11/3/2026&DATAMODE=",
+    "https://results.elections.myflorida.com/downloadresults.asp?ElectionDate=11/3/2026&DATAMODE=",
+    "https://results.elections.myflorida.com/TitlePage.asp?ElectionDate=&DATAMODE=",
+  ],
   states: [
     // South Carolina, Iowa, Kansas: Clarity election-night reporting; find the current election id.
     "https://results.enr.clarityelections.com/SC/",
@@ -78,6 +89,11 @@ async function probe(url, out = console.log) {
     const text = /json|text|xml|html|javascript/.test(type) || buf.length < 200000 ? buf.toString("utf8") : "";
     console.log(`\n=== ${url}`);
     console.log(`status ${res.status} final ${res.url} type ${type} bytes ${buf.length} ms ${Date.now() - t0}`);
+    if (res.status === 202 || res.status === 403) console.log("headers:", JSON.stringify(Object.fromEntries(res.headers)));
+    for (const k of ["downloadReport", "Xml", "xml", "enr-scvotes", "clarityelections", "ElecResults", "download"]) {
+      const i = text.indexOf(k);
+      if (i >= 0 && !/kalshi|polymarket|bsky|google/.test(url)) console.log(`near "${k}":`, short(text.slice(Math.max(0, i - 300), i + 500), 800));
+    }
     console.log(`cors ${res.headers.get("access-control-allow-origin")} cache ${res.headers.get("cache-control")} last-mod ${res.headers.get("last-modified")}`);
     if (/json/.test(type) || /^[\[{]/.test(text.trim())) {
       try {

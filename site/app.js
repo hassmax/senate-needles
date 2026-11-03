@@ -101,7 +101,7 @@ function drawTicks(g, marks) {
   for (const m of marks) {
     if (m.p == null || !isFinite(m.p)) continue;
     const p = Math.min(0.995, Math.max(0.005, m.p));
-    const [x1, y1] = arcPoint(p, R_OUT + 2), [x2, y2] = arcPoint(p, R_OUT + 12), [xt, yt] = arcPoint(p, R_OUT + (m.label === "P" ? 32 : 21));
+    const [x1, y1] = arcPoint(p, R_OUT + 2), [x2, y2] = arcPoint(p, R_OUT + 12), [xt, yt] = arcPoint(p, R_OUT + (m.label === "P" ? 32 : m.label.length > 1 ? 46 : 21));
     if (m.hollow) {
       const [cx, cy] = arcPoint(p, R_OUT + 8);
       g.append(svgEl("circle", { cx, cy, r: 4, fill: "none", stroke: "var(--muted)", "stroke-width": "1.5" }));
@@ -395,6 +395,25 @@ function renderControl() {
   box.replaceChildren();
   const main = el("div", { class: "control-main" });
   main.append(el("h2", { text: "Senate control" }));
+  // The control needle: Democrats on the left, Republicans on the right.
+  if (!S.controlNeedle) S.controlNeedle = buildNeedle(CONTROL_SIDES);
+  const nd = S.controlNeedle, ctl0 = (S.live && S.live.control) || {};
+  const norm = (o) => (o && o.d != null ? (o.r != null ? o.d / ((o.d + o.r) || 1) : o.d) : null);
+  drawTicks(nd.ticks, [
+    { p: norm(ctl0.kalshi), label: "K", title: "Kalshi market price" },
+    { p: norm(ctl0.polymarket), label: "P", title: "Polymarket market price" },
+    { p: norm(ctl0.ddhq), label: "DDHQ", title: "Decision Desk HQ forecast" },
+  ]);
+  nd.lp.textContent = `${pct(c.d)}%`; nd.rp.textContent = `${pct(c.r)}%`;
+  nd.lp.classList.toggle("lead", c.d >= c.r); nd.rp.classList.toggle("lead", c.r > c.d);
+  nd.svg.setAttribute("aria-label", `Senate control: Democrats ${pct(c.d)}%, Republicans ${pct(c.r)}%`);
+  // The dial shows Democrats' chance against Republicans' (the small Osborn share split evenly).
+  const dial = c.d + c.balance / 2;
+  requestAnimationFrame(() => { nd.arm.style.transform = `rotate(${angleOf(dial)}deg)`; });
+  const body = el("div", { class: "control-body" });
+  main.append(el("div", { class: "control-row" }, el("div", { class: "control-needle" }, nd.wrap), body));
+  const mainAppend = main.append.bind(main);
+  main.append = (...k) => body.append(...k);
   const fav = c.d >= c.r ? ["dem", "Democrats", c.d] : ["rep", "Republicans", c.r];
   main.append(el("div", { class: "control-head" },
     el("span", { class: "big num", style: `color:var(--${fav[0]})`, text: `${pct(fav[2])}%` }),
@@ -408,6 +427,7 @@ function renderControl() {
     W: matchMedia("(max-width: 600px)").matches ? 360 : 520, caption: "Chance of a majority over the night", now: [now, c.d, c.r], right: (pt) => pt[2] ?? 1 - pt[1],
   });
   main.append(fig);
+  main.append = mainAppend;
 
   const side = el("div", { class: "control-others" }, el("h3", { text: "Others' odds" }));
   const ctl = (S.live && S.live.control) || {};
@@ -425,6 +445,24 @@ function renderControl() {
   if (side.childNodes.length === 1) side.append(el("p", { class: "muted", text: "Not available yet." }));
   side.append(el("p", { class: "fine", text: "Markets are shown for comparison and are not part of this site's estimate. Decision Desk HQ's forecast is part of each race's starting point." }));
   box.append(main, side);
+}
+
+// ---------- poll-closing banner ----------
+function renderBanner() {
+  const box = document.getElementById("banner");
+  const now = Date.now();
+  const sched = ((S.config && S.config.poll_schedule) || []).filter((x) => Date.parse(x.time) > now);
+  if (!sched.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const next = sched[0], mins = Math.round((Date.parse(next.time) - now) / 60000);
+  const inText = mins < 1 ? "now" : mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, "0")} min`;
+  box.replaceChildren(
+    el("div", { class: "banner-next" },
+      el("span", { class: "banner-tag", text: "Next polls close" }),
+      el("b", { class: "num", text: `${fmtTime(next.time)} ET` }), el("span", { class: "banner-in", text: ` (${inText}):` }),
+      el("span", { text: ` ${next.places}` }),
+      next.note ? el("span", { class: "banner-note", text: ` ${next.note}` }) : null),
+    sched.length > 1 ? el("div", { class: "banner-later", text: "Later: " + sched.slice(1).map((x) => `${fmtTime(x.time)} ${x.short || x.places}`).join(" · ") }) : null);
 }
 
 // ---------- summary ----------
@@ -446,13 +484,6 @@ function renderSummary() {
   }
   box.append(el("div", { class: "item" }, "These races now: ",
     el("b", { class: "dem", text: `${l} lean D/I` }), " · ", el("b", { class: "muted", text: `${t} tossup` }), " · ", el("b", { class: "rep", text: `${r} lean R` })));
-  const now = Date.now();
-  const next = S.config.races.filter((x) => Date.parse(x.polls_close) > now).sort((a, b) => Date.parse(a.polls_close) - Date.parse(b.polls_close));
-  if (next.length) {
-    const tnext = next[0].polls_close;
-    const names = next.filter((x) => x.polls_close === tnext).map((x) => x.state).join(", ");
-    box.append(el("div", { class: "item muted", text: `Next polls close ${fmtTime(tnext)} ET: ${names}` }));
-  }
 }
 
 // ---------- feed ----------
@@ -539,6 +570,7 @@ async function refresh() {
 
 function renderAll() {
   computeAll();
+  renderBanner();
   renderControl();
   for (const race of S.config.races) updateCard(race, S.cards[race.id]);
   renderSummary();
@@ -560,6 +592,7 @@ async function boot() {
   await refresh();
   setInterval(refresh, REFRESH_MS);
   setInterval(renderStatus, 5000);
+  setInterval(renderBanner, 20000);
   // Polls-close times pass without new data; re-render each minute so status chips change.
   setInterval(renderAll, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });

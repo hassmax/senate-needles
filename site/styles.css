@@ -82,12 +82,23 @@ a { color: inherit; }
 .summary .rep { color: var(--rep); }
 .summary .muted { color: var(--muted); }
 
+.banner { background: var(--accent); color: #fff; padding: 9px 20px; font-size: 14px; }
+.banner-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; }
+.banner-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 6px; opacity: 0.9; }
+.banner b { font-size: 16px; }
+.banner-note { opacity: 0.9; }
+.banner-later { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+@media (max-width: 980px) { .banner { padding: 9px 16px; } }
+.control-row { display: flex; align-items: center; gap: 4px 20px; flex-wrap: wrap; }
+.control-needle { flex: 0 0 280px; max-width: 100%; padding-top: 18px; }
+.control-needle .needle-wrap { max-width: 280px; margin: 0; }
+.control-body { flex: 1 1 300px; min-width: 0; }
 .control {
   display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px 28px; padding: 14px 20px 10px;
   border-bottom: 1px solid var(--line); max-width: 1500px; margin: 0 auto;
 }
 .control h2 { margin: 0 0 2px; font-size: 16px; }
-.control-main { min-width: 0; max-width: 640px; }
+.control-main { min-width: 0; max-width: 960px; }
 .control-head { display: flex; align-items: center; gap: 10px; }
 .control-head .big { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
 .control-head .who { display: flex; flex-direction: column; line-height: 1.2; }

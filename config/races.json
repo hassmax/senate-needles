@@ -847,5 +847,43 @@
         "source": "assumed safe"
       }
     ]
-  }
+  },
+  "poll_schedule": [
+    {
+      "time": "2026-11-03T23:00:00Z",
+      "places": "most of Kentucky and Indiana",
+      "short": "KY, IN",
+      "note": "The first early clues: Kentucky's Senate race (Barr expected to win by about 18). Kentucky's Senate race may be called soon after."
+    },
+    {
+      "time": "2026-11-04T00:00:00Z",
+      "places": "Florida (most), South Carolina, Virginia, Georgia, western Kentucky, northwest Indiana",
+      "short": "FL, SC, VA, GA",
+      "note": "Florida and South Carolina Senate races; the Florida and Virginia House clues."
+    },
+    {
+      "time": "2026-11-04T00:30:00Z",
+      "places": "Ohio",
+      "short": "OH",
+      "note": "Ohio's Senate special election (Brown v. Husted)."
+    },
+    {
+      "time": "2026-11-04T01:00:00Z",
+      "places": "Texas (most), Michigan (most), Maine, Kansas (most), Florida panhandle",
+      "short": "TX, MI, ME, KS",
+      "note": "Four Senate races at once."
+    },
+    {
+      "time": "2026-11-04T02:00:00Z",
+      "places": "Iowa, Nebraska, El Paso area of Texas, western Kansas",
+      "short": "IA, NE",
+      "note": "Iowa and Nebraska Senate races."
+    },
+    {
+      "time": "2026-11-04T05:00:00Z",
+      "places": "Alaska (most)",
+      "short": "AK",
+      "note": "Alaska counts for two weeks; its needle stays wide."
+    }
+  ]
 }

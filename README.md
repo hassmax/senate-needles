@@ -6,13 +6,15 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
 
 ## What the page shows
 
-- **Senate control** (top): this site's own chance of each party winning a majority, with a trend
+- **Poll-closing banner** (top): the next poll closing, a countdown and what to watch, from
+  `poll_schedule` in `config/races.json` (edit there).
+- **Senate control** (top): a needle and this site's own chance of each party winning a majority, with a trend
   line over the night. It adds up the 10 needles (the model's own chances, never market odds) and
   the 25 other seats up this year (`senate.others` in `config/races.json`: Decision Desk HQ's
   numbers where it posted them, otherwise assumed safe or likely), allowing for polling misses that
   run the same way everywhere. Republicans keep control at 50 seats (the vice president breaks
   ties); Democrats need 51; if Osborn (independent, Nebraska) wins and the Senate is 50–49, he holds
-  the balance. Beside it, for comparison: Kalshi, Polymarket, and Decision Desk HQ's stated chance.
+  the balance. Beside it, for comparison: Kalshi, Polymarket, and Decision Desk HQ's stated chance (also ticks on the needle: K, P, DDHQ).
 - **The needle**: this site's own rough estimate of each candidate's chance to win. Before votes are
   counted, it sits on a starting point that blends G. Elliott Morris's final forecast (50%),
   Decision Desk HQ's last posted forecast (30%) and the final polling average (20%), all entered

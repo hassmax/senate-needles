@@ -27,9 +27,9 @@ jobs:
           openssl x509 -inform der -in /tmp/ak.crt -out /tmp/ak.pem
           echo "NODE_EXTRA_CA_CERTS=/tmp/ak.pem" >> "$GITHUB_ENV"
       - run: node scripts/probe.mjs ${{ inputs.groups }}
-      - name: Kentucky and Indiana formats
+      - name: Decision Desk HQ and Polymarket control
         continue-on-error: true
-        run: node scripts/probe_kyin.mjs
+        run: node scripts/probe_ddhq.mjs
       - name: Count readers against real files
         continue-on-error: true
         run: |
@@ -56,4 +56,4 @@ jobs:
           node-version: 22
       - name: One update, not published
         run: |
-          node scripts/fetch.mjs --state /tmp/state --out /tmp/out && node -e "const j=require('/tmp/out/live.json'); for (const [k,v] of Object.entries(j.races)) console.log(k, JSON.stringify({counts: v.counts && {ok: v.counts.ok, error: v.counts.error, votes: v.counts.votes}, markets: v.markets, call: v.call})); console.log('control', JSON.stringify(j.control)); console.log('feed', j.feed.length); for (const f of j.feed.slice(0,15)) console.log(' ', f.kind, f.via||'', f.race, f.time, f.author||f.outlet, '|', f.text.slice(0,100))"
+          node scripts/fetch.mjs --state /tmp/state --out /tmp/out && node -e "const j=require('/tmp/out/live.json'); for (const [k,v] of Object.entries(j.races)) console.log(k, JSON.stringify({counts: v.counts && {ok: v.counts.ok, error: v.counts.error, votes: v.counts.votes}, markets: v.markets, call: v.call})); console.log('control', JSON.stringify(j.control)); console.log('clues', JSON.stringify(j.clues)); console.log('feed', j.feed.length); for (const f of j.feed.slice(0,15)) console.log(' ', f.kind, f.via||'', f.race, f.time, f.author||f.outlet, '|', f.text.slice(0,100))"

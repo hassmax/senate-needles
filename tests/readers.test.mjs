@@ -137,3 +137,31 @@ test("Virginia House district totals from the results API", async () => {
   assert.deepEqual(r.precincts, [6, 18]);
   assert.equal(virginiaHouse(items, { ...bw, district: 4 }), null);
 });
+
+test("Kentucky contest totals from the live results page", async () => {
+  const { kentuckyContest } = await import("../scripts/sources/states.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bw = cfg.bellwethers.list.find((b) => b.id === "KY-SEN");
+  const row = (name, party, abs, total) => `<div class="results-tbl-body-row"> <div class="results-tbl-row results-tbl-row-data"> <div class="results-tbl-col1 results-tbl-row-candidate-name">${name}</div> <div class="results-tbl-col2 results-tbl-row-candidate-party">${party}</div> <div class="results-tbl-col3 results-tbl-row-absentee">${abs}</div> <div class="results-tbl-col4 results-tbl-row-total">${total}</div> <div class="results-tbl-col5 results-tbl-row-percent">50%</div> </div></div>`;
+  const block = (title, rows) => `<div class="results-tbl results-tbl-partisan" data-contest-type="1"> <div class="results-tbl-bar" style="x"><div style="flex:8">${title}<span id="results-tbl-subtitle"></span></div> <div>Vote For: 1</div></div> <div class="results-tbl-content"><div class="results-tbl-body">${rows}</div></div></div>`;
+  const html = block("MAYOR City of Livermore", row("Sharon BOYKEN", "", "1", "40")) +
+    block("UNITED STATES SENATOR", row("Andy BARR", "Republican", "1,000", "12,345") + row("Charles BOOKER", "Democratic", "900", "10,111"));
+  assert.deepEqual(kentuckyContest(html, bw, /united states senator/i), { left: 10111, right: 12345, other: 0, precincts: null });
+});
+
+test("Indiana House district totals from the results file", async () => {
+  const { indianaRace } = await import("../scripts/sources/states.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const bw = cfg.bellwethers.list.find((b) => b.id === "IN-01");
+  const json = { Root: { StatewideSummary: { Race: [
+    { SubSortOrder: "United States Representative, (1) District", OFFICE_TITLE: "United States Representative, First District",
+      Candidates: { Candidate: [
+        { NAME_ON_BALLOT: "Frank J. Mrvan", PARTY: "D", TOTAL: 5000 },
+        { NAME_ON_BALLOT: "Barb Regnitz", PARTY: "R", TOTAL: 4000 },
+        { NAME_ON_BALLOT: "Alexander R (Alex) Degman (W/I)", PARTY: "I", TOTAL: 12 }] } },
+    { SubSortOrder: "United States Representative, (2) District", OFFICE_TITLE: "United States Representative, Second District",
+      Candidates: { Candidate: [{ NAME_ON_BALLOT: "Rudy Yakym", PARTY: "R", TOTAL: 9 }] } },
+  ] } } };
+  assert.deepEqual(indianaRace(json, bw), { left: 5000, right: 4000, other: 12, precincts: null });
+  assert.equal(indianaRace(json, { ...bw, district: 7 }), null);
+});

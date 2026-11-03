@@ -42,7 +42,8 @@ const [counts, markets, control, posts, headlines, stars] = await Promise.all([
 ]);
 
 // Early-clue House districts (after the Senate counts, so Florida's file is already in hand).
-const clues = await safe("clues", () => allBellwethers((config.bellwethers || {}).list, prev.clues, health), prev.clues || {});
+cache.clues = cache.clues || {};
+const clues = await safe("clues", () => allBellwethers((config.bellwethers || {}).list, prev.clues, health, cache.clues), prev.clues || {});
 
 // Race calls: from a call source's own post (config/feed.json "calls"), or set by hand in races.json.
 const calls = {};

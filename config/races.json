@@ -454,10 +454,57 @@
   "forecast_weight": 0.7,
   "history_since": "2026-11-03T20:00:00Z",
   "bellwethers": {
-    "_note": "Early-clue House races from Axios (Hans Nichols): states where voting ends early and counting is quick. Each one's count against 'expected' (left minus right, points) feeds the national shift that moves every Senate needle. 'expected' = 2024 presidential margin + the forecast national swing (D+8.5 vs. 2024, from a D+7 House vote) + about 2 points for an incumbent. Edit if better numbers turn up.",
+    "_note": "Early-clue races: Axios's list (Hans Nichols) plus Kentucky's Senate race and Indiana's 1st district, the first states to close: states where voting ends early and counting is quick. Each one's count against 'expected' (left minus right, points) feeds the national shift that moves every Senate needle. 'expected' = 2024 presidential margin + the forecast national swing (D+8.5 vs. 2024, from a D+7 House vote) + about 2 points for an incumbent. Edit if better numbers turn up.",
     "source": "Axios (Hans Nichols): races that could give early midterm clues",
     "local_sd": 7,
     "list": [
+      {
+        "id": "KY-SEN",
+        "label": "Kentucky Senate",
+        "state": "KY",
+        "office": "senate",
+        "reader": "kentucky",
+        "polls_close": "2026-11-03T23:00:00Z",
+        "left": {
+          "name": "Charles Booker",
+          "last": "Booker",
+          "party": "D"
+        },
+        "right": {
+          "name": "Andy Barr",
+          "last": "Barr",
+          "party": "R"
+        },
+        "expected": -18.0,
+        "local_sd": 6,
+        "basis": "Trump +31 in 2024; forecast swing D+8.5 gives Barr +22; Booker lost by 24 in the 2022 Republican year, about Barr +14 in tonight's forecast environment; midpoint Barr +18",
+        "watch": "Kentucky's eastern counties close at 6 pm ET and count fast: the night's first statewide read on how far the national environment has moved.",
+        "expected_votes": 1550000,
+        "min_interval": 180
+      },
+      {
+        "id": "IN-01",
+        "label": "Indiana 1st",
+        "state": "IN",
+        "district": 1,
+        "reader": "indiana",
+        "polls_close": "2026-11-04T00:00:00Z",
+        "left": {
+          "name": "Frank Mrvan",
+          "last": "Mrvan",
+          "party": "D",
+          "incumbent": true
+        },
+        "right": {
+          "name": "Barb Regnitz",
+          "last": "Regnitz",
+          "party": "R"
+        },
+        "expected": 12.0,
+        "basis": "Mrvan won by 7 in 2024; forecast swing D+8.5 plus incumbency; rated Lean to Likely Democratic",
+        "watch": "Indiana's only competitive House seat; a close race here would be a warning sign for Democrats.",
+        "expected_votes": 245000
+      },
       {
         "id": "FL-14",
         "label": "Florida 14th",

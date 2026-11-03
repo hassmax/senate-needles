@@ -515,7 +515,8 @@ function renderClues() {
     chip.append(el("div", { class: "clue-name", text: `${bw.id} ` }, el("span", { text: `${bw.left.last} (D) v. ${bw.right.last} (R)` })));
     if (c && c.ok) {
       const tot = c.left + c.right + c.other, m = (c.left - c.right) / tot * 100;
-      const f = c.precincts && c.precincts[1] ? c.precincts[0] / c.precincts[1] : null;
+      const f = c.precincts && c.precincts[1] ? c.precincts[0] / c.precincts[1] : bw.expected_votes ? Math.min(1, tot / bw.expected_votes) : null;
+      if (!c.precincts && bw.expected_votes) c.unitsAre = "expected vote";
       chip.append(el("div", { class: "clue-now" },
         el("b", { style: `color:var(--${m >= 0 ? "dem" : "rep"})`, text: `${m >= 0 ? bw.left.last : bw.right.last} +${Math.abs(m).toFixed(1)}` }),
         f != null ? ` · ${Math.round(f * 100)}% of ${c.unitsAre || "precincts"} in` : ""));

@@ -250,7 +250,10 @@ export function evidenceOf(est, prior) {
 export function bellwetherEvidence(bw, counts, localSd = 7) {
   if (!counts || !counts.ok) return null;
   const tot = counts.left + counts.right + counts.other;
-  const f = counts.precincts && counts.precincts[1] ? counts.precincts[0] / counts.precincts[1] : 0;
+  // Share counted: precincts (or localities) reporting where the state gives them, else votes
+  // counted against the turnout expected for the race (bw.expected_votes).
+  let f = counts.precincts && counts.precincts[1] ? counts.precincts[0] / counts.precincts[1] : 0;
+  if (!counts.precincts && bw.expected_votes) f = Math.min(0.97, tot / bw.expected_votes);
   if (tot < 500 || f < 0.05) return null;
   const m = (counts.left - counts.right) / tot;
   const tau2 = NATIONAL_SHARE * 0.055 * 0.055;

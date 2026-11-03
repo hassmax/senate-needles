@@ -296,18 +296,85 @@ export function virginiaHouse(items, bw) {
   return { left, right, other, precincts: rs.totalUnits ? [num(rs.reportingUnits), num(rs.totalUnits)] : null, unitsAre: "localities" };
 }
 
+// Kentucky's live results page (State Board of Elections / Secretary of State): one server-rendered
+// page with every contest as a "results-tbl" block. The site has a bot manager; if it refuses,
+// the clue just shows that it couldn't be read.
+let kyHtml = null;
+async function kentuckyPage() {
+  if (kyHtml) return kyHtml;
+  return (kyHtml = await get("https://vrsws.sos.ky.gov/liveresults/", { timeout: 45000 }));
+}
+export function kentuckyContest(html, bw, titleRe) {
+  const blocks = String(html || "").split(/<div class="results-tbl[ "]/).slice(1);
+  const strip = (x) => x.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  for (const b of blocks) {
+    const title = strip((b.match(/results-tbl-bar[^>]*>\s*<div[^>]*>([\s\S]*?)<\/div>/) || [])[1] || "");
+    if (!titleRe.test(title)) continue;
+    let left = 0, right = 0, other = 0, rows = 0;
+    for (const r of b.matchAll(/results-tbl-row-candidate-name[^>]*>([\s\S]*?)<\/div>\s*<div[^>]*candidate-party[^>]*>([\s\S]*?)<\/div>([\s\S]*?)(?=results-tbl-row-candidate-name|$)/g)) {
+      const cells = [...r[3].matchAll(/<div[^>]*results-tbl-col\d[^>]*>([\s\S]*?)<\/div>/g)].map((m) => strip(m[1]));
+      const total = num(cells[1] != null ? cells[1] : cells[0]);
+      const side = sideOf(bw, { name: strip(r[1]), party: strip(r[2]) });
+      if (side === "left") left += total; else if (side === "right") right += total; else other += total;
+      rows++;
+    }
+    if (!rows) continue;
+    const pr = strip(b).match(/(\d[\d,]*)\s*(?:of|\/)\s*(\d[\d,]*)\s*precincts/i);
+    return { left, right, other, precincts: pr ? [num(pr[1]), num(pr[2])] : null };
+  }
+  return null;
+}
+
+// Indiana's election-night site (enr.indianavoters.in.gov): JSON files named by a version letter
+// from settings.json; the U.S. House races are office category 1005.
+const IN_BASE = "https://enr.indianavoters.in.gov/site/data/";
+let inHouse = null;
+async function indianaHouseFile() {
+  if (inHouse) return inHouse;
+  const settings = await getJSON(`${IN_BASE}settings.json`);
+  const vt = ((settings.Root || settings).VersionType) || "A";
+  return (inHouse = await getJSON(`${IN_BASE}OffCatC_1005_${vt}.json`));
+}
+const ORD = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9 };
+export function indianaRace(json, bw) {
+  const root = (json && (json.Root || json)) || {};
+  const races = [].concat((root.StatewideSummary && root.StatewideSummary.Race) || []);
+  const race = races.find((r) => {
+    const t = `${r.SubSortOrder || ""} ${r.OFFICE_TITLE || ""}`;
+    const m = t.match(/\((\d+)\) District/) || t.match(/District\s+0*(\d+)/i);
+    const w = (r.OFFICE_TITLE || "").toLowerCase().match(/(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth) district/);
+    return /representative/i.test(t) && ((m && +m[1] === bw.district) || (w && ORD[w[1]] === bw.district));
+  });
+  if (!race) return null;
+  let left = 0, right = 0, other = 0;
+  for (const c of [].concat((race.Candidates && race.Candidates.Candidate) || [])) {
+    const side = sideOf(bw, { name: c.NAME_ON_BALLOT || c.CandidateName, party: c.PARTY });
+    if (side === "left") left += num(c.TOTAL); else if (side === "right") right += num(c.TOTAL); else other += num(c.TOTAL);
+  }
+  // Precinct counts, if the file carries them for the race.
+  const key = (re) => Object.keys(race).find((k) => re.test(k));
+  const rep = key(/precincts?_?reporting|reporting_?precincts|PRECINCTSREPORTING/i), all = key(/total_?precincts|precincts?_?total|NumofPrecincts|PRECINCTS$/i);
+  return { left, right, other, precincts: rep && all && num(race[all]) ? [num(race[rep]), num(race[all])] : null };
+}
+
 const BW_READERS = {
+  indiana: async (bw) => indianaRace(await indianaHouseFile(), bw),
+  kentucky: async (bw) => kentuckyContest(await kentuckyPage(), bw, /united states senator|u\.?s\.? senator/i),
   virginia: async (bw) => virginiaHouse(await virginiaItems(), bw),
   // Florida's districts come from the statewide file the Senate reader just fetched (no extra request).
   florida: async (bw) => (floridaRows ? floridaHouse(floridaRows, bw) : undefined),
 };
 
-export async function allBellwethers(list, prev, health) {
+export async function allBellwethers(list, prev, health, cache = {}) {
   const out = {};
   await Promise.all((list || []).map(async (bw) => {
     const old = prev && prev[bw.id];
     const fn = BW_READERS[bw.reader];
     if (!fn) { out[bw.id] = old || null; return; }
+    // Ask slow or touchy sites (Kentucky's) at most every bw.min_interval seconds.
+    const c = (cache[bw.id] = cache[bw.id] || {});
+    if (bw.min_interval && c.lastTry && Date.now() - c.lastTry < bw.min_interval * 1000 && old) { out[bw.id] = old; return; }
+    c.lastTry = Date.now();
     try {
       const r = await fn(bw);
       if (r === undefined) { out[bw.id] = old || null; return; } // nothing new this run

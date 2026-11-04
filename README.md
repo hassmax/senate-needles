@@ -35,8 +35,8 @@ free services: GitHub Actions collects the data and GitHub Pages serves the page
   Florida's come from the same file as its Senate race; Virginia's from the Department of
   Elections' results API; Kentucky's from the State Board's live page (read every 3 minutes; it refuses GitHub's servers, so Decision Desk HQ's Kentucky updates stand in);
   Indiana's from the state's election-night JSON.
-- **Markets in the needle**: each needle blends this site's estimate (70%) with the Kalshi/Polymarket
-  average (30%, `market_weight` in `config/races.json`; owner's choice). The K and P ticks still show
+- **Markets in the needle**: each needle blends this site's estimate (60%) with the Kalshi/Polymarket
+  average (40%, `market_weight` in `config/races.json`; owner's choice). The K and P ticks still show
   each market on its own, and the hollow mark the starting point. Results elsewhere (the national
   shift) learn only from counts.
 - **Where the counts come from**: Ohio (the Secretary of State's NIST XML feed), Florida (the

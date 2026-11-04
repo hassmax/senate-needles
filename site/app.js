@@ -466,7 +466,7 @@ function renderControl() {
   row("Polymarket", ctl.polymarket, "market");
   row("Decision Desk HQ", ctl.ddhq, ctl.ddhq && ctl.ddhq.time ? `forecast, posted ${fmtTime(ctl.ddhq.time)} ET` : "forecast");
   if (side.childNodes.length === 1) side.append(el("p", { class: "muted", text: "Not available yet." }));
-  side.append(el("p", { class: "fine", text: "Each race needle takes 30% from the Kalshi/Polymarket average, so markets feed into this estimate too. Decision Desk HQ's forecast is part of each race's starting point." }));
+  side.append(el("p", { class: "fine", text: "Each race needle takes 40% from the Kalshi/Polymarket average, so markets feed into this estimate too. Decision Desk HQ's forecast is part of each race's starting point." }));
   box.append(main, side);
 }
 

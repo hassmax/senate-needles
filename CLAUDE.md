@@ -4,7 +4,7 @@ Election-night needles for 10 close 2026 Senate races. Owner: a law student, not
 
 - `scripts/fetch.mjs` (Node 22, no packages) reads official counts (`scripts/sources/states.mjs`), Kalshi/Polymarket (`markets.mjs`), Bluesky and Google News (`social.mjs`); writes `out/live.json`, `out/history.json`; state lives on the `data` branch.
 - `site/model.js` is the estimate, shared by the page and the collector; tests in `tests/`.
-- Markets: each needle blends in the Kalshi/Polymarket average at `market_weight` (0.3, owner's choice on election night, `needle()` in model.js); the K/P ticks still show them separately. Never feed market prices into the national shift (`nationalShift`). Race calls only from a call source's own post or a hand call in `config/races.json`.
+- Markets: each needle blends in the Kalshi/Polymarket average at `market_weight` (0.4, owner's choice on election night, `needle()` in model.js); the K/P ticks still show them separately. Never feed market prices into the national shift (`nationalShift`). Race calls only from a call source's own post or a hand call in `config/races.json`.
 - Show only short excerpts and links for posts and headlines.
 - This sandbox can't reach most sources; test them with the "Check sources" workflow.
 - G. Elliott Morris's analysis is factored into the needles, not shown separately (owner's choice): `forecast` in races.json (his final forecast, entered by hand) is 50% of each starting point (`priorOf`, with DDHQ 30% and polls 20%); win probabilities he states on Bluesky are parsed (`statedChance`) and blended in (`blendLive`). Don't add a panel or card lines for his posts.

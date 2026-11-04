@@ -126,39 +126,38 @@ async function nebraska(race, cfg) {
 // ---------- NIST 1500-100 election results XML (Ohio's feed) ----------
 const tag = (s, t) => { const m = s.match(new RegExp(`<${t}\\b[^>]*>([\\s\\S]*?)</${t}>`)); return m ? m[1].trim() : null; };
 const tags = (s, t) => [...s.matchAll(new RegExp(`<${t}\\b([^>]*)>([\\s\\S]*?)</${t}>`, "g"))];
+// Elements may be written <X ...>...</X> or <X .../>, and values may be attributes (Ohio puts
+// Name, Type and counts in attributes) or child elements: read both.
+const els = (s, t) => [...s.matchAll(new RegExp(`<${t}\\b([^>]*?)(?:/>|>([\\s\\S]*?)</${t}>)`, "g"))].map((m) => [m[0], m[1], m[2] || ""]);
+const attr = (open, a) => { const m = open.match(new RegExp(`(?:^|\\s)${a}="([^"]*)"`)); return m ? m[1] : null; };
+const field = (e, a) => { const v = attr(e[1], a); if (v != null) return v.trim(); const t = tag(e[2], a); return t == null ? null : t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); };
 export function parseNist(xml, race) {
   const gp = new Map();
-  for (const g of tags(xml, "GpUnit")) {
-    const id = (g[1].match(/ObjectId="([^"]+)"/) || [])[1];
-    const name = tag(g[2], "Name") || tag(tag(g[2], "Text") || "", "Text") || id;
+  for (const g of els(xml, "GpUnit")) {
+    const id = attr(g[1], "ObjectId");
     gp.set(id, {
-      name: name.replace(/<[^>]+>/g, ""), type: (tag(g[2], "Type") || "").toLowerCase(),
-      total: num(tag(g[2], "TotalSubUnits")), reported: num(tag(g[2], "SubUnitsReported")),
+      name: field(g, "Name") || id, type: (field(g, "Type") || "").toLowerCase(),
+      total: num(field(g, "TotalSubUnits")), reported: num(field(g, "SubUnitsReported")),
     });
   }
   const cands = new Map(), parties = new Map();
-  for (const p of tags(xml, "Party")) {
-    const id = (p[1].match(/ObjectId="([^"]+)"/) || [])[1];
-    parties.set(id, (tag(p[2], "Abbreviation") || tag(p[2], "Text") || tag(p[2], "Name") || "").replace(/<[^>]+>/g, ""));
+  for (const p of els(xml, "Party")) parties.set(attr(p[1], "ObjectId"), field(p, "Abbreviation") || field(p, "Name") || "");
+  for (const c of els(xml, "Candidate")) {
+    cands.set(attr(c[1], "ObjectId"), { name: field(c, "BallotName") || "", party: parties.get(field(c, "PartyId")) || "" });
   }
-  for (const c of tags(xml, "Candidate")) {
-    const id = (c[1].match(/ObjectId="([^"]+)"/) || [])[1];
-    const name = (tag(c[2], "BallotName") || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    cands.set(id, { name, party: parties.get(tag(c[2], "PartyId")) || "" });
-  }
-  const contest = tags(xml, "Contest").find((c) => {
-    const name = (tag(c[2].replace(/<BallotSelection[\s\S]*<\/BallotSelection>/g, ""), "Name") || "").replace(/<[^>]+>/g, "");
-    return /u\.?\s?s\.?\s+senat|united states senat/i.test(name) && !/state senat/i.test(name);
+  const contest = els(xml, "Contest").find((c) => {
+    const name = attr(c[1], "Name") || (tag(c[2].replace(/<BallotSelection[\s\S]*<\/BallotSelection>/g, ""), "Name") || "").replace(/<[^>]+>/g, "");
+    return /u\.?\s?s\.?\s*senat|united states senat/i.test(name) && !/state senat/i.test(name);
   });
   if (!contest) throw new Error("no U.S. Senate contest in the XML feed");
   const units = new Map();
-  for (const sel of tags(contest[2], "BallotSelection")) {
-    const cid = tag(sel[2], "CandidateIds") || tag(sel[2], "CandidateId");
+  for (const sel of els(contest[2], "BallotSelection")) {
+    const cid = field(sel, "CandidateIds") || field(sel, "CandidateId");
     const cand = cands.get(cid) || { name: "", party: "" };
     const side = sideOf(race, cand);
     const perUnit = new Map();
-    for (const vc of tags(sel[2], "VoteCounts")) {
-      const g = tag(vc[2], "GpUnitId"), type = (tag(vc[2], "Type") || "total").toLowerCase(), n = num(tag(vc[2], "Count"));
+    for (const vc of els(sel[2], "VoteCounts")) {
+      const g = field(vc, "GpUnitId"), type = (field(vc, "Type") || "total").toLowerCase(), n = num(field(vc, "Count"));
       const e = perUnit.get(g) || { total: null, sum: 0 };
       if (type === "total") e.total = n; else e.sum += n;
       perUnit.set(g, e);

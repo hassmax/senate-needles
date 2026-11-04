@@ -203,3 +203,23 @@ test("Dave Wasserman's \"I've seen enough\" posts are race calls", async () => {
   assert.deepEqual(c, { race: "OH", winner: "left" });
   assert.equal(detectCall(cfg.races, { text: "Not ready to say I've seen enough in Ohio Senate yet: Brown could still win.", time: "2026-11-04T02:00:00Z" }, Date.parse("2026-11-04T02:01:00Z")), null);
 });
+
+test("Ohio's NIST XML with names and counts in attributes", async () => {
+  const { parseNist } = await import("../scripts/sources/states.mjs");
+  const cfg = JSON.parse(fs.readFileSync(new URL("../config/races.json", import.meta.url)));
+  const oh = cfg.races.find((r) => r.id === "OH");
+  const xml = `<ElectionReport>
+  <GpUnit xsi:type="ReportingUnit" ObjectId="_A" Name="Adams County" IsElectoralDistrict="true" Type="County"/>
+  <GpUnit xsi:type="ReportingUnit" ObjectId="_SD1" Name="Senate District 1" Type="StateSenate"/>
+  <Party ObjectId="_D" Abbreviation="DEM" Name="Democratic"/><Party ObjectId="_R" Abbreviation="REP" Name="Republican"/>
+  <Candidate ObjectId="_c1"><BallotName><Text Language="en">Sherrod Brown</Text></BallotName><PartyId>_D</PartyId></Candidate>
+  <Candidate ObjectId="_c2"><BallotName><Text Language="en">Jon Husted</Text></BallotName><PartyId>_R</PartyId></Candidate>
+  <Contest xsi:type="CandidateContest" ObjectId="_g" Name="Governor and Lieutenant Governor"><BallotSelection ObjectId="_x"><VoteCounts GpUnitId="_A" Type="total" Count="5"/><CandidateIds>_c1</CandidateIds></BallotSelection></Contest>
+  <Contest xsi:type="CandidateContest" ObjectId="_s" Name="U.S. Senator (Unexpired Term)">
+    <BallotSelection xsi:type="CandidateSelection" ObjectId="_b1"><VoteCounts GpUnitId="_A" Type="total" Count="1,200"/><CandidateIds>_c1</CandidateIds></BallotSelection>
+    <BallotSelection xsi:type="CandidateSelection" ObjectId="_b2"><VoteCounts><GpUnitId>_A</GpUnitId><Type>total</Type><Count>1500</Count></VoteCounts><CandidateIds>_c2</CandidateIds></BallotSelection>
+  </Contest></ElectionReport>`;
+  const r = parseNist(xml, oh);
+  assert.equal(r.units.length, 1);
+  assert.deepEqual([r.units[0].name, r.units[0].left, r.units[0].right], ["Adams County", 1200, 1500]);
+});

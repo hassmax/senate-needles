@@ -262,7 +262,9 @@ export function bellwetherEvidence(bw, counts, localSd = 7) {
   // Share counted: precincts (or localities) reporting where the state gives them, else votes
   // counted against the turnout expected for the race (bw.expected_votes).
   let f = counts.precincts && counts.precincts[1] ? counts.precincts[0] / counts.precincts[1] : 0;
-  if (!counts.precincts && bw.expected_votes) f = Math.min(0.97, tot / bw.expected_votes);
+  // Votes counted against the turnout expected for the race, where known: this also caps
+  // completeness read from localities (a third of Virginia's counties can be in with a tenth of the vote).
+  if (bw.expected_votes && counts.via !== "ddhq") f = counts.precincts ? Math.min(f, tot / bw.expected_votes) : Math.min(0.97, tot / bw.expected_votes);
   // Localities (Virginia's counties and cities) are uneven in size and politics: one reporting
   // locality says little about a district, so wait for a fifth of them and add more noise.
   const byLocality = counts.unitsAre === "localities";

@@ -625,7 +625,9 @@
         },
         "expected": 1.5,
         "basis": "Trump +5 in 2024 (Axios); forecast swing D+8.5; Wittman incumbency -2",
-        "watch": "A Democratic flip of this Trump +5 seat points to a very good night for Democrats."
+        "watch": "A Democratic flip of this Trump +5 seat points to a very good night for Democrats.",
+        "expected_votes": 335000,
+        "expected_votes_note": "About 75% of the district's 2024 House vote (a midterm)"
       },
       {
         "id": "VA-02",
@@ -647,7 +649,9 @@
         },
         "expected": 3.5,
         "basis": "October CNU poll Luria +3; 2024 baseline plus forecast swing about Luria +4",
-        "watch": "Tests whether a strong Republican incumbent can survive a Democratic wave."
+        "watch": "Tests whether a strong Republican incumbent can survive a Democratic wave.",
+        "expected_votes": 290000,
+        "expected_votes_note": "About 75% of the district's 2024 House vote (a midterm)"
       },
       {
         "id": "VA-05",
@@ -669,7 +673,9 @@
         },
         "expected": -5.5,
         "basis": "Trump +12 in 2024 (Axios); forecast swing D+8.5; McGuire incumbency -2",
-        "watch": "A Democratic flip of this Trump +12 seat points to a great night for Democrats."
+        "watch": "A Democratic flip of this Trump +12 seat points to a great night for Democrats.",
+        "expected_votes": 305000,
+        "expected_votes_note": "About 75% of the district's 2024 House vote (a midterm)"
       }
     ]
   },

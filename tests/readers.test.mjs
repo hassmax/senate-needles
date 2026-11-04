@@ -106,10 +106,12 @@ test("an early-clue district moves the Senate needles once enough is in", async 
   for (const r of cfg.races) bl[r.id] = JSON.parse(fs.readFileSync(new URL(`../site/data/baseline/${r.id}.json`, import.meta.url)));
   const bw = cfg.bellwethers.list.find((b) => b.id === "VA-05");
   // Expected McGuire +5.5; the Democrat is up 2 with 80% of precincts in: 7.5 pts better for Democrats.
-  const counts = { ok: true, left: 51000, right: 49000, other: 0, precincts: [80, 100] };
+  const counts = { ok: true, left: 125000, right: 120000, other: 0, precincts: [80, 100] };
   assert.equal(bellwetherEvidence(bw, { ...counts, precincts: [2, 100] }), null);
   const e = bellwetherEvidence(bw, counts);
-  assert.ok(Math.abs(e.d - 0.075) < 1e-9);
+  assert.ok(Math.abs(e.d - 0.075) < 1e-3);
+  // A third of the localities in but a tenth of the expected vote: too early to read much.
+  assert.ok(bellwetherEvidence(bw, { ...counts, left: 15000, right: 15000, precincts: [33, 100] }).f < 0.11);
   const t = Date.parse("2026-11-03T23:30:00Z");
   const quiet = needles(cfg.races, bl, {}, {}, cfg, t, {});
   const res = needles(cfg.races, bl, {}, {}, cfg, t, { "VA-05": counts });

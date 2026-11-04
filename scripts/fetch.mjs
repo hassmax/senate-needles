@@ -95,7 +95,11 @@ for (const r of races) {
   // States whose own results can't be read use Decision Desk HQ's latest posted update instead.
   let cnt = counts[r.id] || null;
   const du = dd && dd.counts && dd.counts[r.id];
-  if (du && !(cnt && cnt.ok)) cnt = ddhqCount(du);
+  // DDHQ posts one early update per race, not a running count: after 40 minutes it is too
+  // stale to stand in for a count (unless nearly all the vote was in), and the needle goes back
+  // to its starting point and market odds.
+  const fresh = du && (Date.now() - Date.parse(du.time) < 40 * 60e3 || du.pct_in >= 95);
+  if (du && fresh && !(cnt && cnt.ok)) cnt = ddhqCount(du);
   out.races[r.id] = {
     counts: cnt,
     markets: { kalshi: m.kalshi || pm.kalshi || null, polymarket: m.polymarket || pm.polymarket || null },

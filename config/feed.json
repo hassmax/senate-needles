@@ -55,7 +55,9 @@
       },
       {
         "handle": "nbcnews.com",
-        "name": "NBC News"
+        "name": "NBC News",
+        "calls": "NBC News",
+        "all_election": true
       },
       {
         "handle": "cbsnews.com",

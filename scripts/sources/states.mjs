@@ -223,7 +223,9 @@ export async function allCounts(races, prev, cache, health) {
   const out = {};
   await Promise.all(races.map(async (race) => {
     const cfg = race.counts;
-    const old = prev && prev[race.id] && prev[race.id].counts;
+    // A Decision Desk HQ stand-in is never carried over: fetch.mjs decides afresh each run.
+    const prevC = prev && prev[race.id] && prev[race.id].counts;
+    const old = prevC && prevC.via !== "ddhq" ? prevC : null;
     if (!cfg || !READERS[cfg.reader]) { out[race.id] = old || null; return; }
     const c = (cache[race.id] = cache[race.id] || {});
     // Some sites challenge readers that ask too often (Florida's did, three requests in a row), and

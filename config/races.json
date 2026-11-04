@@ -43,7 +43,7 @@
         "reader": "nist",
         "url": "https://liveresults.ohiosos.gov/Api/v1/download?filename=VSSC1622XmlFileBlob",
         "source": "Ohio Secretary of State",
-        "min_interval": 90
+        "min_interval": 150
       },
       "forecast": {
         "p_left": 0.661,

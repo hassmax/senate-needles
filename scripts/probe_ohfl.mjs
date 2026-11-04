@@ -8,6 +8,11 @@ console.log("OH page", s1, "files:", files.join(" | "));
 for (const f of files.filter((f) => /xml/i.test(f)).slice(0, 6)) {
   const [s, t] = await g(`https://liveresults.ohiosos.gov/Api/v1/download?filename=${encodeURIComponent(f)}`);
   console.log(`OH ${f}: ${s} ${t.length} senate=${/U\.?S\.? Senat|United States Senat/i.test(t)} head=${sh(t, 300)}`);
+  if (/VSSC/.test(f)) {
+    const i = t.search(/Senat/i);
+    console.log("OH around first Senat:", sh(t.slice(Math.max(0, i - 1500), i + 1500), 3000));
+    console.log("OH contest openings:", [...t.matchAll(/<Contest\b[^>]*>[\s\S]{0,400}/g)].slice(0, 4).map((m) => sh(m[0], 400)).join("\n  "));
+  }
 }
 const [s2, csv] = await g("https://liveresults.ohiosos.gov/Api/v1/Contest/GetElectionSummaryCsv");
 console.log("OH summary csv", s2, csv.length, sh(csv, 400));

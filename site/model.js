@@ -263,11 +263,14 @@ export function bellwetherEvidence(bw, counts, localSd = 7) {
   // counted against the turnout expected for the race (bw.expected_votes).
   let f = counts.precincts && counts.precincts[1] ? counts.precincts[0] / counts.precincts[1] : 0;
   if (!counts.precincts && bw.expected_votes) f = Math.min(0.97, tot / bw.expected_votes);
-  if (tot < 500 || f < 0.05) return null;
+  // Localities (Virginia's counties and cities) are uneven in size and politics: one reporting
+  // locality says little about a district, so wait for a fifth of them and add more noise.
+  const byLocality = counts.unitsAre === "localities";
+  if (tot < 1000 || f < (byLocality ? 0.2 : 0.05)) return null;
   const m = (counts.left - counts.right) / tot;
   const tau2 = NATIONAL_SHARE * 0.055 * 0.055;
   const local = (bw.local_sd || localSd) / 100;
-  const partial = 0.12 * (1 - Math.min(1, f));
+  const partial = (byLocality ? 0.25 : 0.12) * (1 - Math.min(1, f));
   return { d: m - bw.expected / 100, v: partial * partial + 0.0001, sd0: Math.sqrt(tau2 + local * local), f, m };
 }
 

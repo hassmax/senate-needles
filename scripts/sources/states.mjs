@@ -29,7 +29,10 @@ async function florida(race, cfg) {
     if (!seenCounty.has(county)) { seenCounty.add(county); pIn += rp; pAll += tp; }
     units.set(county, u);
   }
-  if (!units.size) throw new Error("no Senate rows in the Florida file yet");
+  if (!units.size) {
+    const offices = [...new Set(rows.map((r) => r.OfficeDesc || r.RaceName).filter(Boolean))].slice(0, 8).join("; ");
+    throw new Error(`no Senate rows in the Florida file yet (${rows.length} rows${offices ? `; offices: ${offices}` : ""})`);
+  }
   return { source: "Florida Division of Elections", url: "https://results.elections.myflorida.com/", units: [...units.values()], precincts: pAll ? [pIn, pAll] : null };
 }
 
